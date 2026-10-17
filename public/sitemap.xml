@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Home -->
+  <url>
+    <loc>https://valorhub.com/</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Category -->
+  <url>
+    <loc>https://valorhub.com/category</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Category: Blue Collar -->
+  <url>
+    <loc>https://valorhub.com/category/blue-collar</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Category: Grey Collar -->
+  <url>
+    <loc>https://valorhub.com/category/grey-collar</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Category: Gold Collar -->
+  <url>
+    <loc>https://valorhub.com/category/gold-collar</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Category: White Collar -->
+  <url>
+    <loc>https://valorhub.com/category/white-collar</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Category: Other Services -->
+  <url>
+    <loc>https://valorhub.com/category/other-services</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Marketplace -->
+  <url>
+    <loc>https://valorhub.com/marketplace</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Giving Back -->
+  <url>
+    <loc>https://valorhub.com/giving-back</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- FAQ -->
+  <url>
+    <loc>https://valorhub.com/faq</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Contact -->
+  <url>
+    <loc>https://valorhub.com/contact</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Join as a Pro -->
+  <url>
+    <loc>https://valorhub.com/join</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- About (implied by nav/footer) -->
+  <url>
+    <loc>https://valorhub.com/about</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://valorhub.com/privacy-policy</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Terms of Service -->
+  <url>
+    <loc>https://valorhub.com/terms-of-service</loc>
+    <lastmod>2025-08-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
