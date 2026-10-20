@@ -1,12 +1,12 @@
+import UserAvatar from "@/components/shared/user-avatar";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router";
-import { navigation, user } from "../data/dashboard";
-import { useDashboard } from "../data/dashboard-store";
+import { NavLink, useLocation } from "react-router";
+import { navigation } from "../data/dashboard";
 
 export default function DashboardSidebar() {
-  const navigate = useNavigate();
-  const { state } = useDashboard();
+  const { user, logout } = useAuth();
   const { pathname } = useLocation();
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -22,17 +22,15 @@ export default function DashboardSidebar() {
     <aside className="bg-white lg:w-70 lg:shrink-0 lg:rounded-b-2xl">
       <div className="space-y-6 px-4 py-6 lg:px-6 lg:py-8">
         <div className="flex items-center gap-4 lg:flex-col lg:gap-2 lg:text-center">
-          <img
-            src={user.avatar}
-            alt={state.settings.name}
-            className="size-12 rounded-full object-cover lg:size-16"
+          <UserAvatar
+            name={user?.name ?? ""}
+            src={user?.avatar}
+            className="size-12 lg:size-16 lg:text-base"
           />
           <div className="leading-[normal]">
-            <p className="text-base font-bold text-[#1e293b]">
-              {state.settings.name}
-            </p>
+            <p className="text-base font-bold text-[#1e293b]">{user?.name}</p>
             <p className="pt-1 text-[13px] text-[#64748b] lg:pt-2">
-              {state.settings.email}
+              {user?.email}
             </p>
           </div>
         </div>
@@ -80,7 +78,7 @@ export default function DashboardSidebar() {
 
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => void logout()}
           className="rounded-lg px-3 py-2.5 text-sm leading-[normal] font-medium text-[#64748b] hover:bg-[#f7f8fa] hover:text-[#1e293b] max-lg:hidden"
         >
           Log out

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Award, CircleCheck, Shield } from "lucide-react";
 import { contractorList } from "../data/contractor-list";
-import type { ContractorBadge } from "../data/contractors";
+import type { ContractorBadge } from "@/services/public";
 
 const badgeIcons: Record<ContractorBadge, typeof Award> = {
   elite: Award,

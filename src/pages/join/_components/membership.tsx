@@ -2,9 +2,15 @@ import { onboarding, type Plan } from "../data/onboarding";
 import PlanCards from "./plan-cards";
 
 export default function Membership({
+  plans,
   onSelect,
+  saving,
+  error,
 }: {
+  plans: Plan[];
   onSelect: (plan: Plan) => void;
+  saving: boolean;
+  error?: string;
 }) {
   return (
     <>
@@ -18,7 +24,20 @@ export default function Membership({
       </section>
 
       <div className="bg-input px-4 py-10 xl:px-25">
-        <PlanCards onSelect={onSelect} className="mx-auto max-w-310" />
+        {error && (
+          <p
+            role="alert"
+            className="mx-auto mb-6 max-w-310 rounded-xl bg-[#c92032]/8 px-4 py-3 text-sm text-[#c92032]"
+          >
+            {error}
+          </p>
+        )}
+        <PlanCards
+          plans={plans}
+          onSelect={onSelect}
+          disabled={saving}
+          className="mx-auto max-w-310"
+        />
       </div>
     </>
   );

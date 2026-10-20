@@ -7,7 +7,12 @@ import { categoryHero } from "../data/category-hero";
 
 const { search } = categoryHero;
 
-export default function CategorySearch() {
+// `popular` comes from the API's popular_tags
+export default function CategorySearch({
+  popular = [],
+}: {
+  popular?: string[];
+}) {
   const navigate = useNavigate();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -67,34 +72,36 @@ export default function CategorySearch() {
         </Button>
       </form>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-[#f3f4f6]">
-        <p className="text-muted-foreground text-sm leading-4">
-          {search.popularLabel}
-        </p>
+      {popular.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 border-t border-[#f3f4f6]">
+          <p className="text-muted-foreground text-sm leading-4">
+            {search.popularLabel}
+          </p>
 
-        <ul className="flex flex-wrap items-center gap-2.5 pt-4 pb-2">
-          {search.popular.map((service) => (
-            <li key={service}>
-              <Badge
-                variant="secondary"
-                className="h-6 rounded-[18px] px-2.5 py-1 text-xs leading-4 font-medium"
-                render={
-                  <Link
-                    to={{
-                      pathname: search.action,
-                      search: createSearchParams({
-                        [search.service.name]: service,
-                      }).toString(),
-                    }}
-                  />
-                }
-              >
-                {service}
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      </div>
+          <ul className="flex flex-wrap items-center gap-2.5 pt-4 pb-2">
+            {popular.map((service) => (
+              <li key={service}>
+                <Badge
+                  variant="secondary"
+                  className="h-6 rounded-[18px] px-2.5 py-1 text-xs leading-4 font-medium"
+                  render={
+                    <Link
+                      to={{
+                        pathname: search.action,
+                        search: createSearchParams({
+                          [search.service.name]: service,
+                        }).toString(),
+                      }}
+                    />
+                  }
+                >
+                  {service}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

@@ -80,69 +80,73 @@ export default function StepDescription({
       />
       {error && <p className="pt-2 text-sm text-[#c92032]">{error}</p>}
 
-      <div className="space-y-2 pt-4">
-        <p className="text-sm leading-5 font-medium text-[#364153]">
-          {upload.label}
-        </p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={upload.accept.join(",")}
-          multiple
-          hidden
-          onChange={(event) => {
-            addFiles(event.target.files);
-            event.target.value = "";
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          className={cn(
-            "mt-1.5 flex w-full flex-col items-center justify-center gap-1.5 rounded-[22px] border-2 border-dashed border-[#e5e7eb] p-6.5 text-center transition-colors hover:border-[#cbd2e1]",
-            { "border-secondary-foreground bg-secondary/50": dragging },
+      {requestQuote.photoUploads && (
+        <div className="space-y-2 pt-4">
+          <p className="text-sm leading-5 font-medium text-[#364153]">
+            {upload.label}
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={upload.accept.join(",")}
+            multiple
+            hidden
+            onChange={(event) => {
+              addFiles(event.target.files);
+              event.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "mt-1.5 flex w-full flex-col items-center justify-center gap-1.5 rounded-[22px] border-2 border-dashed border-[#e5e7eb] p-6.5 text-center transition-colors hover:border-[#cbd2e1]",
+              { "border-secondary-foreground bg-secondary/50": dragging },
+            )}
+          >
+            <Upload aria-hidden className="size-6 text-[#6a7282]" />
+            <span className="text-sm leading-5 text-[#6a7282]">
+              {upload.prompt}
+            </span>
+            <span className="text-xs leading-4 text-[#99a1af]">
+              {upload.hint}
+            </span>
+          </button>
+          {uploadError && (
+            <p className="text-sm text-[#c92032]">{uploadError}</p>
           )}
-        >
-          <Upload aria-hidden className="size-6 text-[#6a7282]" />
-          <span className="text-sm leading-5 text-[#6a7282]">
-            {upload.prompt}
-          </span>
-          <span className="text-xs leading-4 text-[#99a1af]">
-            {upload.hint}
-          </span>
-        </button>
-        {uploadError && <p className="text-sm text-[#c92032]">{uploadError}</p>}
 
-        {photos.length > 0 && (
-          <ul className="flex flex-wrap gap-3 pt-2">
-            {photos.map((file, index) => (
-              <li key={`${file.name}-${index}`} className="relative">
-                <img
-                  src={previews[index]}
-                  alt={file.name}
-                  className="size-20 rounded-xl object-cover"
-                />
-                <button
-                  type="button"
-                  aria-label={`Remove ${file.name}`}
-                  onClick={() =>
-                    onPhotosChange(photos.filter((_, i) => i !== index))
-                  }
-                  className="absolute -top-2 -right-2 grid size-6 place-content-center rounded-full bg-[#111827] text-white"
-                >
-                  <X aria-hidden className="size-3.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {photos.length > 0 && (
+            <ul className="flex flex-wrap gap-3 pt-2">
+              {photos.map((file, index) => (
+                <li key={`${file.name}-${index}`} className="relative">
+                  <img
+                    src={previews[index]}
+                    alt={file.name}
+                    className="size-20 rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove ${file.name}`}
+                    onClick={() =>
+                      onPhotosChange(photos.filter((_, i) => i !== index))
+                    }
+                    className="absolute -top-2 -right-2 grid size-6 place-content-center rounded-full bg-[#111827] text-white"
+                  >
+                    <X aria-hidden className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

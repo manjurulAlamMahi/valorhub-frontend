@@ -1,12 +1,15 @@
+import { useApi } from "@/hooks/use-api";
+import { ApiError, firstFieldErrors } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { invoiceApi, type InvoiceCustomer } from "@/services/contractor";
 import { Search, X } from "lucide-react";
 import { useState } from "react";
+import { useDebounceValue } from "usehooks-ts";
 import Modal, { cancelButton, modalField } from "../_components/modal";
-import { customers, type Customer } from "../data/customers";
 
 type AddCustomerModalProps = {
   onClose: () => void;
-  onSelect: (customer: Customer) => void;
+  onSelect: (customer: InvoiceCustomer) => void;
 };
 
 function Initials({ name }: { name: string }) {
@@ -29,46 +32,66 @@ export default function AddCustomerModal({
   onSelect,
 }: AddCustomerModalProps) {
   const [query, setQuery] = useState("");
+  const [search] = useDebounceValue(query.trim(), 250);
+  // Customers who have requested quotes, had projects or been invoiced before
+  const customers = useApi<InvoiceCustomer[]>("/contractor/customers", {
+    search,
+    limit: search ? 10 : 3,
+  });
   const [draft, setDraft] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
   });
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
-  const search = query.trim().toLowerCase();
-  const results = search
-    ? customers.filter((item) =>
-        `${item.name} ${item.email}`.toLowerCase().includes(search),
-      )
-    : customers.slice(0, 3);
-
-  const submit = () => {
-    const next: typeof errors = {};
+  const submit = async () => {
+    const next: Record<string, string> = {};
     if (!draft.name.trim()) next.name = "Enter a customer or business name.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim()))
       next.email = "Enter a valid email address.";
     setErrors(next);
     if (Object.keys(next).length) return;
-    onSelect({
-      name: draft.name.trim(),
-      email: draft.email.trim(),
-      phone: draft.phone.trim() || undefined,
-      address: draft.address.trim() || undefined,
-    });
+
+    setSaving(true);
+    try {
+      // An existing customer with this email is reused rather than duplicated
+      const { data } = await invoiceApi.addCustomer({
+        name: draft.name.trim(),
+        email: draft.email.trim(),
+        phone: draft.phone.trim() || null,
+        billing_address: draft.address.trim() || null,
+      });
+      onSelect(data);
+    } catch (err) {
+      setErrors(
+        err instanceof ApiError && Object.keys(err.fieldErrors).length
+          ? firstFieldErrors(err)
+          : {
+              email:
+                err instanceof ApiError
+                  ? err.message
+                  : "Could not add customer.",
+            },
+      );
+      setSaving(false);
+    }
   };
 
   const update = (key: keyof typeof draft, value: string) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => ({ ...prev, [key]: undefined }));
+    setErrors((prev) => ({ ...prev, [key]: "" }));
   };
+
+  const results = customers.data ?? [];
 
   return (
     <Modal
       label="Add a customer"
       onClose={onClose}
-      onSubmit={submit}
+      onSubmit={() => void submit()}
       className="max-w-110"
     >
       <div className="flex items-center justify-between">
@@ -105,24 +128,20 @@ export default function AddCustomerModal({
         <p className="text-xs font-semibold text-[#8c949e]">
           {search ? "Matching customers" : "Recent customers"}
         </p>
-        {results.length > 0 ? (
+        {!customers.data ? (
+          <p className="rounded-lg border border-[#e5e8ed] px-3 py-4 text-center text-[13px] text-[#8c949e]">
+            {customers.error ? customers.error.message : "Loading…"}
+          </p>
+        ) : results.length > 0 ? (
           <ul className="divide-y divide-[#e5e8ed] overflow-hidden rounded-lg border border-[#e5e8ed]">
             {results.map((item) => (
-              <li key={item.name}>
+              <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => onSelect(item)}
                   className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#f8fafc] focus-visible:bg-[#f8fafc] focus-visible:outline-none"
                 >
-                  {item.avatar ? (
-                    <img
-                      src={item.avatar}
-                      alt=""
-                      className="size-7.5 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <Initials name={item.name} />
-                  )}
+                  <Initials name={item.name} />
                   <span className="min-w-0">
                     <span className="block text-[13px] font-semibold text-[#212633]">
                       {item.name}
@@ -137,7 +156,9 @@ export default function AddCustomerModal({
           </ul>
         ) : (
           <p className="rounded-lg border border-[#e5e8ed] px-3 py-4 text-center text-[13px] text-[#8c949e]">
-            No customers match “{query}”.
+            {search
+              ? `No customers match “${query}”.`
+              : "No customers yet — add one below."}
           </p>
         )}
       </div>
@@ -156,6 +177,7 @@ export default function AddCustomerModal({
           <input
             aria-label="Customer or business name"
             placeholder="Customer or business name"
+            maxLength={255}
             value={draft.name}
             aria-invalid={Boolean(errors.name)}
             onChange={(event) => update("name", event.target.value)}
@@ -170,6 +192,7 @@ export default function AddCustomerModal({
             type="email"
             aria-label="Email address"
             placeholder="Email address"
+            maxLength={255}
             value={draft.email}
             aria-invalid={Boolean(errors.email)}
             onChange={(event) => update("email", event.target.value)}
@@ -184,6 +207,7 @@ export default function AddCustomerModal({
             type="tel"
             aria-label="Phone number"
             placeholder="Phone number"
+            maxLength={50}
             value={draft.phone}
             onChange={(event) => update("phone", event.target.value)}
             className={modalField}
@@ -191,6 +215,7 @@ export default function AddCustomerModal({
           <input
             aria-label="Billing address"
             placeholder="Billing address"
+            maxLength={255}
             value={draft.address}
             onChange={(event) => update("address", event.target.value)}
             className={modalField}
@@ -204,9 +229,10 @@ export default function AddCustomerModal({
         </button>
         <button
           type="submit"
-          className="rounded-full bg-[#c41e3a] px-4.5 py-2.25 text-[13px] font-semibold text-white hover:bg-[#a51a31]"
+          disabled={saving}
+          className="rounded-full bg-[#c41e3a] px-4.5 py-2.25 text-[13px] font-semibold text-white hover:bg-[#a51a31] disabled:opacity-60"
         >
-          Add Customer
+          {saving ? "Adding…" : "Add Customer"}
         </button>
       </div>
     </Modal>

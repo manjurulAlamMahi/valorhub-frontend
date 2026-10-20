@@ -1,12 +1,22 @@
 import CtaBanner from "@/components/shared/cta-banner";
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
+import { useAuth } from "@/hooks/use-auth";
 import { breadcrumbSchema, marketplaceSchema } from "@/lib/schemas";
+import type { MarketplaceLanding } from "@/services/marketplace";
 import MarketplaceHero from "./_components/marketplace-hero";
 import ShopByCategory from "./_components/shop-by-category";
 import TrendingProducts from "./_components/trending-products";
 import { marketplace } from "./data/marketplace";
 
 export default function Marketplace() {
+  const { user } = useAuth();
+  const { data, error, refetch } = useApi<MarketplaceLanding>("/marketplace");
+
+  // Contractors list products from their dashboard; everyone else signs up first
+  const listProductLink =
+    user?.role === "business" ? "/contractor/dashboard/products" : "/join";
+
   return (
     <>
       <SEO
@@ -21,12 +31,16 @@ export default function Marketplace() {
 
       <main>
         <MarketplaceHero />
-        <ShopByCategory />
-        <TrendingProducts />
+        <ShopByCategory categories={data?.categories} />
+        <TrendingProducts
+          products={data?.trending_products}
+          error={error}
+          onRetry={refetch}
+        />
         <CtaBanner
           title={marketplace.cta.title}
           description={marketplace.cta.description}
-          actions={[marketplace.cta.action]}
+          actions={[{ label: marketplace.cta.label, link: listProductLink }]}
           className="bg-[#f4f4f4]"
           containerClassName="py-10! xl:max-w-310"
           cardClassName="py-10"

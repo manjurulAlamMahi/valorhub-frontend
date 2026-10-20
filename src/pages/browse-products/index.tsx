@@ -2,13 +2,27 @@ import Breadcrumb from "@/components/shared/breadcrumb";
 import Container from "@/components/shared/container";
 import Section from "@/components/shared/section";
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
 import { breadcrumbSchema } from "@/lib/schemas";
+import type { ProductsData } from "@/services/marketplace";
 import { useSearchParams } from "react-router";
 import ProductListing from "./_components/product-listing";
-import { browseProducts } from "./data/browse-products";
+import { browseProducts, PAGE_SIZE, readFilters } from "./data/browse-products";
 
 export default function BrowseProducts() {
   const [searchParams] = useSearchParams();
+  const filters = readFilters(searchParams);
+
+  const query = useApi<ProductsData>("/marketplace/products", {
+    search: filters.search,
+    category_ids: filters.categories,
+    min_price: filters.min_price,
+    max_price: filters.max_price,
+    in_stock_only: filters.in_stock_only || null,
+    page: filters.page,
+    per_page: PAGE_SIZE,
+    ...Object.fromEntries(filters.credentials.map((key) => [key, true])),
+  });
 
   return (
     <>
@@ -35,7 +49,7 @@ export default function BrowseProducts() {
           </Container>
         </Section>
 
-        <ProductListing key={searchParams.get("category")} />
+        <ProductListing filters={filters} query={query} />
       </main>
     </>
   );

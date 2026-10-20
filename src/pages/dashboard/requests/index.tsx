@@ -1,27 +1,31 @@
+import Pagination from "@/components/shared/pagination";
+import { useApi } from "@/hooks/use-api";
+import type { Paged, ServiceRequest } from "@/services/customer";
 import { useState } from "react";
 import { ActionLink } from "../_components/action-button";
 import DashboardPage from "../_components/dashboard-page";
 import FilterTabs from "../_components/filter-tabs";
+import QueryBoundary from "@/components/shared/query-boundary";
 import RequestRow from "../_components/request-row";
-import { quotes, type RequestStatus } from "../data/dashboard";
-import { useDashboard } from "../data/dashboard-store";
 
-type Tab = "all" | Exclude<RequestStatus, "cancelled">;
+type Tab = "all" | "new" | "quoted" | "accepted" | "rejected";
 
+// Tab values are the API's quote request statuses
 const tabs: { label: string; value: Tab }[] = [
   { label: "All", value: "all" },
-  { label: "Pending", value: "pending" },
-  { label: "In Progress", value: "in_progress" },
-  { label: "Completed", value: "completed" },
+  { label: "Awaiting quote", value: "new" },
+  { label: "Quote received", value: "quoted" },
+  { label: "Accepted", value: "accepted" },
+  { label: "Declined", value: "rejected" },
 ];
 
 export default function MyRequests() {
-  const { state } = useDashboard();
   const [tab, setTab] = useState<Tab>("all");
-  const items =
-    tab === "all"
-      ? state.requests
-      : state.requests.filter((request) => request.status === tab);
+  const [page, setPage] = useState(1);
+  const query = useApi<Paged<ServiceRequest>>("/customer/requests", {
+    status: tab === "all" ? null : tab,
+    page,
+  });
 
   return (
     <DashboardPage
@@ -33,44 +37,47 @@ export default function MyRequests() {
         label="Filter requests"
         tabs={tabs}
         value={tab}
-        onChange={setTab}
+        onChange={(next) => {
+          setTab(next);
+          setPage(1);
+        }}
       />
 
-      {items.length > 0 ? (
-        <ul className="space-y-3.5">
-          {items.map((request) => {
-            const hasQuotes = quotes.some(
-              (quote) => quote.requestId === request.id,
-            );
-            return (
-              <RequestRow
-                key={request.id}
-                request={request}
-                showDate
-                action={
-                  <ActionLink
-                    variant="outline"
-                    to={
-                      hasQuotes
-                        ? "/dashboard/quotes"
-                        : request.status === "completed"
-                          ? "/dashboard/invoices"
-                          : "/dashboard/inbox"
+      <QueryBoundary query={query}>
+        {({ items, pagination }) =>
+          items.length > 0 ? (
+            <>
+              <ul className="space-y-3.5">
+                {items.map((request) => (
+                  <RequestRow
+                    key={request.id}
+                    request={request}
+                    showDate
+                    action={
+                      <ActionLink
+                        variant="outline"
+                        to={`/dashboard/quotes/${request.id}`}
+                        className="w-25"
+                      >
+                        View
+                      </ActionLink>
                     }
-                    className="w-25"
-                  >
-                    View
-                  </ActionLink>
-                }
+                  />
+                ))}
+              </ul>
+              <Pagination
+                page={pagination.current_page}
+                totalPages={pagination.last_page}
+                onPageChange={setPage}
               />
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="rounded-xl border border-[#e6eaf2] p-10 text-center text-sm text-[#64748b]">
-          No requests in this category.
-        </p>
-      )}
+            </>
+          ) : (
+            <p className="rounded-xl border border-[#e6eaf2] p-10 text-center text-sm text-[#64748b]">
+              No requests in this category.
+            </p>
+          )
+        }
+      </QueryBoundary>
     </DashboardPage>
   );
 }

@@ -1,11 +1,16 @@
 import Container from "@/components/shared/container";
 import Section from "@/components/shared/section";
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
 import { breadcrumbSchema, faqSchema } from "@/lib/schemas";
+import type { FaqData } from "@/services/public";
 import FaqList from "./_components/faq-list";
 import { faq } from "./data/faq";
 
 export default function Faq() {
+  const query = useApi<FaqData>("/faqs");
+  const items = query.data?.items ?? [];
+
   return (
     <>
       <SEO
@@ -13,7 +18,7 @@ export default function Faq() {
         description="Answers to common questions about ValorHub — requesting quotes, platform fees, Elite Members, joining as a contractor, and payments."
         canonical="https://valorhub.com/faq"
         jsonLd={[
-          faqSchema(faq.items),
+          ...(items.length ? [faqSchema(items)] : []),
           breadcrumbSchema([{ name: "FAQ", url: "/faq" }]),
         ]}
       />
@@ -28,7 +33,7 @@ export default function Faq() {
           </Container>
         </Section>
 
-        <FaqList />
+        <FaqList query={query} />
       </main>
     </>
   );

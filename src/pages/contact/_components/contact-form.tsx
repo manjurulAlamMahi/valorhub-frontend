@@ -1,3 +1,4 @@
+import { useAuth } from "@/hooks/use-auth";
 import { ApiError, apiPost } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CircleCheck } from "lucide-react";
@@ -37,7 +38,13 @@ const inputClassName =
   "w-full rounded-lg border border-[#e6eaf2] bg-input px-3.5 py-2.75 text-sm leading-[normal] text-[#1e293b] outline-none placeholder:text-[#64748b] focus:border-secondary-foreground/40 focus:ring-3 focus:ring-secondary-foreground/10 aria-invalid:border-[#c92032]";
 
 export default function ContactForm() {
-  const [values, setValues] = useState(initialValues);
+  const { user } = useAuth();
+  // Logged-in users don't need to retype their name and email
+  const [values, setValues] = useState(() => ({
+    ...initialValues,
+    full_name: user?.name ?? "",
+    email: user?.email ?? "",
+  }));
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "success">(
     "idle",

@@ -1,27 +1,21 @@
 import { SEO } from "@/components/seo/SEO";
+import PageLoader from "@/components/shared/page-loader";
+import { ErrorState } from "@/components/shared/query-state";
+import { useInbox } from "@/hooks/use-inbox";
 import { cn } from "@/lib/utils";
-import {
-  ChevronLeft,
-  FileText,
-  ImageIcon,
-  Paperclip,
-  Search,
-  SendHorizontal,
-} from "lucide-react";
+import { ChevronLeft, Search, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
-import { conversations as initialConversations } from "../data/messages";
 
-const now = () =>
-  `Today ${new Date()
-    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-    .replace(" ", "")
-    .toLowerCase()}`;
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+}
 
-const attachOption =
-  "flex cursor-pointer flex-col items-center gap-1 rounded-lg px-4 py-3 text-xs leading-4 font-medium text-[#374151] hover:bg-[#f8fafc]";
-
-function Avatar({ initials, small }: { initials: string; small?: boolean }) {
+function Avatar({ name, small }: { name: string; small?: boolean }) {
   return (
     <span
       aria-hidden
@@ -30,96 +24,32 @@ function Avatar({ initials, small }: { initials: string; small?: boolean }) {
         small ? "size-7" : "size-9",
       )}
     >
-      {initials}
+      {initials(name)}
     </span>
   );
 }
 
 export default function Messages() {
-  const navigate = useNavigate();
-  const [conversations, setConversations] = useState(initialConversations);
-  const [activeId, setActiveId] = useState(initialConversations[0].id);
-  // On small screens the list and the thread are shown one at a time
-  const [showThread, setShowThread] = useState(false);
-  const [query, setQuery] = useState("");
+  const inbox = useInbox();
+  const { list, thread, active, activeId, query, setQuery, search } = inbox;
   const [draft, setDraft] = useState("");
-  const [attachOpen, setAttachOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
-  const attachRef = useRef<HTMLDivElement>(null);
-
-  const active = conversations.find((item) => item.id === activeId)!;
-  const search = query.trim().toLowerCase();
-  const visible = conversations.filter(
-    (item) =>
-      !search ||
-      item.name.toLowerCase().includes(search) ||
-      item.project.toLowerCase().includes(search),
-  );
+  const conversations = list.data?.items ?? [];
 
   // Keep the newest message in view
   useEffect(() => {
-    const thread = threadRef.current;
-    if (thread) thread.scrollTop = thread.scrollHeight;
-  }, [activeId, active.messages.length]);
+    const element = threadRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [activeId, active?.messages.length]);
 
-  useEffect(() => {
-    if (!attachOpen) return;
-    const close = (event: PointerEvent | KeyboardEvent) => {
-      if (
-        event instanceof KeyboardEvent
-          ? event.key === "Escape"
-          : !attachRef.current?.contains(event.target as Node)
-      )
-        setAttachOpen(false);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [attachOpen]);
-
-  const open = (id: string) => {
-    setActiveId(id);
-    setShowThread(true);
-    setConversations((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, unread: 0 } : item)),
-    );
-  };
-
-  const send = (text: string) => {
-    setConversations((prev) =>
-      prev.map((item) =>
-        item.id === activeId
-          ? {
-              ...item,
-              time: "Just now",
-              // Replying marks the conversation as read
-              unread: 0,
-              messages: [
-                ...item.messages,
-                { id: crypto.randomUUID(), from: "me", text, time: now() },
-              ],
-            }
-          : item,
-      ),
-    );
-  };
-
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-    send(text);
-    setDraft("");
+    if (await inbox.send(draft)) setDraft("");
   };
 
-  const attach = (files: FileList | null) => {
-    if (!files?.length) return;
-    send(Array.from(files, (file) => `📎 ${file.name}`).join("\n"));
-    setAttachOpen(false);
-  };
+  const subject = (conversation: {
+    linked_subject: { title: string } | null;
+  }) => conversation.linked_subject?.title;
 
   return (
     <>
@@ -134,7 +64,7 @@ export default function Messages() {
           aria-label="Conversations"
           className={cn(
             "flex w-full flex-col border-r border-[#e2e8f0] bg-white md:w-72 md:shrink-0",
-            { "max-md:hidden": showThread },
+            { "max-md:hidden": activeId },
           )}
         >
           <div className="border-b border-[#f1f5f9] p-4">
@@ -157,211 +87,210 @@ export default function Messages() {
             </div>
           </div>
 
-          <ul className="flex-1 overflow-y-auto">
-            {visible.map((item) => {
-              const last = item.messages[item.messages.length - 1];
-              const selected = item.id === activeId;
-              return (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => open(item.id)}
-                    aria-current={selected ? "true" : undefined}
-                    className={cn(
-                      "flex w-full items-start gap-3 border-b border-[#0f172a]/6 px-4 py-3.5 text-left transition-colors hover:bg-[#f8fafc]",
-                      { "bg-[#f0f7ff] hover:bg-[#f0f7ff]": selected },
-                    )}
-                  >
-                    <span className="relative">
-                      <Avatar initials={item.initials} />
-                      {item.unread > 0 && (
-                        <span className="absolute -top-1 left-6 grid size-4 place-content-center rounded-full bg-[#c41e3a] text-[10px] leading-[15px] font-bold text-white">
-                          {item.unread}
-                          <span className="sr-only"> unread</span>
-                        </span>
+          {!list.data && list.error ? (
+            <ErrorState
+              error={list.error}
+              onRetry={list.refetch}
+              className="m-4"
+            />
+          ) : !list.data ? (
+            <PageLoader className="min-h-0 flex-1" />
+          ) : (
+            <ul className="flex-1 overflow-y-auto">
+              {conversations.map((item) => {
+                const selected = item.id === activeId;
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => inbox.open(item.id)}
+                      aria-current={selected ? "true" : undefined}
+                      className={cn(
+                        "flex w-full items-start gap-3 border-b border-[#0f172a]/6 px-4 py-3.5 text-left transition-colors hover:bg-[#f8fafc]",
+                        { "bg-[#f0f7ff] hover:bg-[#f0f7ff]": selected },
                       )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-1">
-                        <span className="truncate text-sm leading-5 font-semibold text-[#0f172a]">
-                          {item.name}
-                        </span>
-                        <span className="shrink-0 text-xs leading-4 text-[#94a3b8]">
-                          {item.time}
-                        </span>
-                      </span>
-                      <span className="block text-xs leading-4 text-[#64748b]">
-                        {item.project}
-                      </span>
-                      <span
-                        className={cn(
-                          "block truncate pt-0.5 text-xs leading-4",
-                          item.unread > 0
-                            ? "font-medium text-[#374151]"
-                            : "text-[#94a3b8]",
+                    >
+                      <span className="relative">
+                        <Avatar name={item.other_user.name} />
+                        {item.unread_count > 0 && (
+                          <span className="absolute -top-1 left-6 grid size-4 place-content-center rounded-full bg-[#c41e3a] text-[10px] leading-[15px] font-bold text-white">
+                            {item.unread_count}
+                            <span className="sr-only"> unread</span>
+                          </span>
                         )}
-                      >
-                        {last.from === "me" && item.unread === 0 && selected
-                          ? `You: ${last.text}`
-                          : last.text}
                       </span>
-                    </span>
-                  </button>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-1">
+                          <span className="truncate text-sm leading-5 font-semibold text-[#0f172a]">
+                            {item.other_user.name}
+                          </span>
+                          <span className="shrink-0 text-xs leading-4 text-[#94a3b8]">
+                            {item.last_message?.sent_human}
+                          </span>
+                        </span>
+                        {subject(item) && (
+                          <span className="block text-xs leading-4 text-[#64748b]">
+                            {subject(item)}
+                          </span>
+                        )}
+                        <span
+                          className={cn(
+                            "block truncate pt-0.5 text-xs leading-4",
+                            item.unread_count > 0
+                              ? "font-medium text-[#374151]"
+                              : "text-[#94a3b8]",
+                          )}
+                        >
+                          {item.last_message
+                            ? `${item.last_message.is_sender_me ? "You: " : ""}${item.last_message.body}`
+                            : "No messages yet"}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {conversations.length === 0 && (
+                <li className="p-6 text-center text-sm text-[#64748b]">
+                  {search
+                    ? "No conversations found."
+                    : "No messages yet. Use “Message customer” on a quote request to start one."}
                 </li>
-              );
-            })}
-            {visible.length === 0 && (
-              <li className="p-6 text-center text-sm text-[#64748b]">
-                No conversations found.
-              </li>
-            )}
-          </ul>
+              )}
+            </ul>
+          )}
         </section>
 
         <section
-          aria-label={`Conversation with ${active.name}`}
+          aria-label={
+            active
+              ? `Conversation with ${active.other_user.name}`
+              : "Conversation"
+          }
           className={cn("flex min-w-0 flex-1 flex-col", {
-            "max-md:hidden": !showThread,
+            "max-md:hidden": !activeId,
           })}
         >
-          <div className="flex items-center gap-3 border-b border-[#e2e8f0] bg-white px-4 py-3.5 sm:px-5">
-            <button
-              type="button"
-              onClick={() => setShowThread(false)}
-              aria-label="Back to conversations"
-              className="-ml-1 rounded-lg p-1 text-[#64748b] hover:bg-[#f1f5f9] md:hidden"
-            >
-              <ChevronLeft aria-hidden className="size-5" />
-            </button>
-            <Avatar initials={active.initials} />
-            <div className="min-w-0">
-              <p className="truncate text-sm leading-5 font-semibold text-[#0f172a]">
-                {active.name}
-              </p>
-              <p className="truncate text-xs leading-4 text-[#64748b]">
-                {active.project}
-              </p>
-            </div>
-          </div>
-
-          <div
-            ref={threadRef}
-            role="log"
-            aria-live="polite"
-            className="flex-1 space-y-4 overflow-y-auto bg-[#f8fafc] p-4 sm:p-5"
-          >
-            {active.messages.map((message) =>
-              message.from === "me" ? (
-                <div
-                  key={message.id}
-                  className="ml-auto w-fit max-w-[min(28rem,85%)]"
-                >
-                  <p className="rounded-2xl rounded-br-sm bg-[#262262] px-4 py-2.5 text-sm leading-5 whitespace-pre-line text-white">
-                    {message.text}
-                  </p>
-                  <p className="pt-1 text-right text-xs leading-4 text-[#94a3b8]">
-                    {message.time}
-                  </p>
-                </div>
-              ) : (
-                <div key={message.id} className="flex items-end gap-2">
-                  <span className="pb-5">
-                    <Avatar initials={active.initials} small />
-                  </span>
-                  <div className="w-fit max-w-[min(28rem,80%)]">
-                    <p className="rounded-2xl rounded-bl-sm bg-white px-4 py-2.5 text-sm leading-5 whitespace-pre-line text-[#0f172a] shadow-[0_1px_1.5px_rgba(0,0,0,0.06)]">
-                      {message.text}
-                    </p>
-                    <p className="pt-1 text-xs leading-4 text-[#94a3b8]">
-                      {message.time}
-                    </p>
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-3 border-t border-[#e2e8f0] bg-white px-4 py-4 sm:px-5"
-          >
-            <div ref={attachRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setAttachOpen((prev) => !prev)}
-                aria-label="Attach"
-                aria-expanded={attachOpen}
-                aria-controls="attach-menu"
-                className={cn(
-                  "rounded-lg p-2 text-[#64748b] hover:bg-[#f1f5f9]",
-                  {
-                    "bg-[#f1f5f9] text-[#262262]": attachOpen,
-                  },
-                )}
-              >
-                <Paperclip aria-hidden className="size-5" />
-              </button>
-              {attachOpen && (
-                <div
-                  id="attach-menu"
-                  className="absolute bottom-full left-0 mb-4 flex gap-2 rounded-xl border border-[#e2e8f0] bg-white p-2 shadow-[0_10px_7.5px_rgba(0,0,0,0.1),0_4px_3px_rgba(0,0,0,0.1)]"
-                >
-                  {[
-                    { label: "Photo", icon: ImageIcon, accept: "image/*" },
-                    { label: "File", icon: Paperclip, accept: undefined },
-                  ].map(({ label, icon: Icon, accept }) => (
-                    <label
-                      key={label}
-                      className={cn(
-                        attachOption,
-                        "focus-within:ring-3 focus-within:ring-[#262262]/20",
-                      )}
-                    >
-                      <input
-                        type="file"
-                        accept={accept}
-                        multiple
-                        onChange={(event) => {
-                          attach(event.target.files);
-                          event.target.value = "";
-                        }}
-                        className="sr-only"
-                      />
-                      <Icon aria-hidden className="size-5" />
-                      {label}
-                    </label>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => navigate("/contractor/dashboard/quotes")}
-                    className={attachOption}
-                  >
-                    <FileText aria-hidden className="size-5" />
-                    Quote
-                  </button>
-                </div>
-              )}
-            </div>
-            <label htmlFor="message-input" className="sr-only">
-              Message {active.name}
-            </label>
-            <input
-              id="message-input"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Type a message…"
-              autoComplete="off"
-              className="h-10.5 min-w-0 flex-1 rounded-xl border border-[#e2e8f0] px-4 text-sm text-[#0f172a] outline-none placeholder:text-[#0f172a]/50 focus:border-[#262262]/40 focus:ring-3 focus:ring-[#262262]/10"
+          {!activeId ? (
+            <p className="m-auto p-6 text-center text-sm text-[#64748b]">
+              Select a conversation to read your messages.
+            </p>
+          ) : !active && thread.error ? (
+            <ErrorState
+              error={thread.error}
+              onRetry={thread.refetch}
+              className="m-6"
             />
-            <button
-              type="submit"
-              aria-label="Send message"
-              disabled={!draft.trim()}
-              className="rounded-xl bg-[#262262] p-2.5 text-white transition-opacity hover:bg-[#211d53] disabled:opacity-60"
-            >
-              <SendHorizontal aria-hidden className="size-4" />
-            </button>
-          </form>
+          ) : !active ? (
+            <PageLoader className="min-h-0 flex-1" />
+          ) : (
+            <>
+              <div className="flex items-center gap-3 border-b border-[#e2e8f0] bg-white px-4 py-3.5 sm:px-5">
+                <button
+                  type="button"
+                  onClick={inbox.close}
+                  aria-label="Back to conversations"
+                  className="-ml-1 rounded-lg p-1 text-[#64748b] hover:bg-[#f1f5f9] md:hidden"
+                >
+                  <ChevronLeft aria-hidden className="size-5" />
+                </button>
+                <Avatar name={active.other_user.name} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm leading-5 font-semibold text-[#0f172a]">
+                    {active.other_user.name}
+                  </p>
+                  <p className="truncate text-xs leading-4 text-[#64748b]">
+                    {active.linked_project?.title ??
+                      active.linked_quote?.project_title ??
+                      active.other_user.phone ??
+                      ""}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                ref={threadRef}
+                role="log"
+                aria-live="polite"
+                className="flex-1 space-y-4 overflow-y-auto bg-[#f8fafc] p-4 sm:p-5"
+              >
+                {active.messages.length === 0 && (
+                  <p className="text-center text-sm text-[#64748b]">
+                    Say hello to start the conversation.
+                  </p>
+                )}
+                {active.messages.map((message) =>
+                  message.is_sender_me ? (
+                    <div
+                      key={message.id}
+                      className="ml-auto w-fit max-w-[min(28rem,85%)]"
+                    >
+                      <p className="rounded-2xl rounded-br-sm bg-[#262262] px-4 py-2.5 text-sm leading-5 whitespace-pre-line text-white">
+                        {message.body}
+                      </p>
+                      <p
+                        title={message.sent_date}
+                        className="pt-1 text-right text-xs leading-4 text-[#94a3b8]"
+                      >
+                        {message.sent_time}
+                      </p>
+                    </div>
+                  ) : (
+                    <div key={message.id} className="flex items-end gap-2">
+                      <span className="pb-5">
+                        <Avatar name={active.other_user.name} small />
+                      </span>
+                      <div className="w-fit max-w-[min(28rem,80%)]">
+                        <p className="rounded-2xl rounded-bl-sm bg-white px-4 py-2.5 text-sm leading-5 whitespace-pre-line text-[#0f172a] shadow-[0_1px_1.5px_rgba(0,0,0,0.06)]">
+                          {message.body}
+                        </p>
+                        <p
+                          title={message.sent_date}
+                          className="pt-1 text-xs leading-4 text-[#94a3b8]"
+                        >
+                          {message.sent_time}
+                        </p>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {inbox.sendError && (
+                <p
+                  role="alert"
+                  className="bg-white px-5 pt-2 text-sm text-[#c41e3a]"
+                >
+                  {inbox.sendError}
+                </p>
+              )}
+              <form
+                onSubmit={(event) => void handleSubmit(event)}
+                className="flex items-center gap-3 border-t border-[#e2e8f0] bg-white px-4 py-4 sm:px-5"
+              >
+                <label htmlFor="message-input" className="sr-only">
+                  Message {active.other_user.name}
+                </label>
+                <input
+                  id="message-input"
+                  value={draft}
+                  maxLength={5000}
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="Type a message…"
+                  autoComplete="off"
+                  className="h-10.5 min-w-0 flex-1 rounded-xl border border-[#e2e8f0] px-4 text-sm text-[#0f172a] outline-none placeholder:text-[#0f172a]/50 focus:border-[#262262]/40 focus:ring-3 focus:ring-[#262262]/10"
+                />
+                <button
+                  type="submit"
+                  aria-label="Send message"
+                  disabled={!draft.trim() || inbox.sending}
+                  className="rounded-xl bg-[#262262] p-2.5 text-white transition-opacity hover:bg-[#211d53] disabled:opacity-60"
+                >
+                  <SendHorizontal aria-hidden className="size-4" />
+                </button>
+              </form>
+            </>
+          )}
         </section>
       </div>
     </>

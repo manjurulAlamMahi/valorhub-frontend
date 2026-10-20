@@ -1,20 +1,26 @@
 import Breadcrumb from "@/components/shared/breadcrumb";
 import PageHero from "@/components/shared/page-hero";
 import CategorySearch from "@/pages/category/_components/category-search";
+import type { ContractorsData } from "@/services/public";
 import { contractorList } from "../data/contractor-list";
 import ContractorListStats from "./contractor-list-stats";
 
 type ContractorListHeroProps = {
-  slug: string;
+  path: string;
   title: string;
   description: string;
+  metrics?: ContractorsData["hero"]["metrics"];
+  popular?: string[];
 };
 
 export default function ContractorListHero({
-  slug,
+  path,
   title,
   description,
+  metrics,
+  popular,
 }: ContractorListHeroProps) {
+  // Last word is highlighted, as in the design
   const lastSpace = title.lastIndexOf(" ");
   const headline = title.slice(0, lastSpace);
   const highlight = title.slice(lastSpace + 1);
@@ -27,24 +33,24 @@ export default function ContractorListHero({
             items={[
               { label: "Home", href: "/" },
               { label: "Category", href: "/category" },
-              { label: contractorList.title, href: `/category/${slug}` },
+              { label: contractorList.title, href: path },
             ]}
           />
 
-          <h1 className="space-x-3 font-mono text-3xl leading-[normal] font-extrabold text-white md:text-4xl lg:text-[52px]">
+          <h1 className="min-h-10 space-x-3 font-mono text-3xl leading-[normal] font-extrabold text-white md:min-h-11 md:text-4xl lg:min-h-16 lg:text-[52px]">
             <span>{headline}</span>
             <span className="text-[#c92032]">{highlight}</span>
           </h1>
 
-          <p className="text-sm leading-6 font-medium text-white md:text-base">
+          <p className="min-h-6 text-sm leading-6 font-medium text-white md:text-base">
             {description}
           </p>
         </div>
 
-        <ContractorListStats />
+        <ContractorListStats metrics={metrics} />
       </div>
 
-      <CategorySearch />
+      <CategorySearch popular={popular} />
     </PageHero>
   );
 }

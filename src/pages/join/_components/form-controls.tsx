@@ -183,15 +183,15 @@ type UploadBoxProps = {
   multiple?: boolean;
   // Max size per file in MB
   maxSize: number;
-  files: string[];
-  onChange: (files: string[]) => void;
+  files: File[];
+  onChange: (files: File[]) => void;
   error?: string;
   onError: (error: string) => void;
   className?: string;
   children?: ReactNode;
 };
 
-// Dashed drop zone; keeps the picked file names for the review step
+// Dashed drop zone; keeps the picked files so the step can upload them
 export function UploadBox({
   id,
   icon,
@@ -216,8 +216,11 @@ export function UploadBox({
       return;
     }
     onError("");
-    const names = picked.map((file) => file.name);
-    onChange(multiple ? [...new Set([...files, ...names])] : names);
+    // Re-picking a file with the same name replaces it instead of duplicating
+    const kept = files.filter(
+      (file) => !picked.some((item) => item.name === file.name),
+    );
+    onChange(multiple ? [...kept, ...picked] : picked.slice(0, 1));
   };
 
   return (
@@ -255,7 +258,7 @@ export function UploadBox({
       </label>
       {files.length > 0 && (
         <ul className="flex flex-wrap gap-2">
-          {files.map((name) => (
+          {files.map(({ name }) => (
             <li
               key={name}
               className="bg-secondary text-secondary-foreground flex max-w-full items-center gap-1.5 rounded-full py-1 pr-1.5 pl-3 text-xs leading-4 font-medium"
@@ -264,7 +267,9 @@ export function UploadBox({
               <button
                 type="button"
                 aria-label={`Remove ${name}`}
-                onClick={() => onChange(files.filter((file) => file !== name))}
+                onClick={() =>
+                  onChange(files.filter((file) => file.name !== name))
+                }
                 className="grid size-4 shrink-0 place-content-center rounded-full hover:bg-[#26225f]/10"
               >
                 ×

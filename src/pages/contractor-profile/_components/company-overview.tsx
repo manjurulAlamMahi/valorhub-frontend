@@ -1,18 +1,34 @@
 import { cn } from "@/lib/utils";
+import type { ContractorProfile } from "@/services/public";
 import { contractorProfile } from "../data/contractor-profile";
 import ProfileSection from "./profile-section";
 
-const { overview } = contractorProfile;
+export default function CompanyOverview({
+  overview,
+}: {
+  overview: ContractorProfile["overview"];
+}) {
+  const facts = [
+    {
+      label: "Business License",
+      value: overview.business_license,
+      verified: overview.business_license.includes("✓"),
+    },
+    { label: "Hours", value: overview.business_hours },
+    {
+      label: "ID.me Verified",
+      value: overview.id_me_verified,
+      verified: overview.id_me_verified.includes("✓"),
+    },
+    { label: "Languages", value: overview.languages.join(", ") },
+  ];
 
-export default function CompanyOverview() {
   return (
-    <ProfileSection title={overview.title} bordered>
-      <p className="text-sm leading-[22.75px] text-[#4a5565]">
-        {overview.description}
-      </p>
+    <ProfileSection title={contractorProfile.overview.title} bordered>
+      <p className="text-sm leading-[22.75px] text-[#4a5565]">{overview.bio}</p>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-6">
-        {overview.facts.map((fact) => (
+        {facts.map((fact) => (
           <div key={fact.label} className="space-y-0.5">
             <dt className="text-muted-foreground text-xs leading-4">
               {fact.label}

@@ -11,8 +11,9 @@ export type OnboardingValues = {
   businessType: string;
   termsAccepted: boolean;
   // Business info
-  logo: string[];
+  logo: File[];
   description: string;
+  // Backend category id (as a string, for the radio group)
   category: string;
   street: string;
   city: string;
@@ -27,15 +28,14 @@ export type OnboardingValues = {
   availableToday: boolean;
   languages: string;
   about: string;
-  documents: string[];
-  coverPhoto: string;
+  documents: File[];
+  coverPhoto: File[];
   // Social links
   website: string;
   facebook: string;
   instagram: string;
   linkedin: string;
-  youtube: string;
-  tiktok: string;
+  twitter: string;
   // Services
   services: string[];
 };
@@ -65,13 +65,12 @@ export const initialValues: OnboardingValues = {
   languages: "",
   about: "",
   documents: [],
-  coverPhoto: "",
+  coverPhoto: [],
   website: "",
   facebook: "",
   instagram: "",
   linkedin: "",
-  youtube: "",
-  tiktok: "",
+  twitter: "",
   services: [],
 };
 

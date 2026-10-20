@@ -1,5 +1,7 @@
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
 import { homeFaqs, organizationSchema, websiteSchema } from "@/lib/schemas";
+import type { HomeData } from "@/services/public";
 import Achievement from "./_components/achievements";
 import BrowsByCategory from "./_components/brows-by-category";
 import Career from "./_components/career";
@@ -10,6 +12,9 @@ import SimpleAndFast from "./_components/simple-and-fast";
 import WhyChooseUs from "./_components/why-choose-us";
 
 export default function Home() {
+  // Marketing copy stays static; spotlight, metrics, categories and testimonials come from the API
+  const { data, error, refetch } = useApi<HomeData>("/home");
+
   return (
     <>
       <SEO
@@ -21,13 +26,17 @@ export default function Home() {
       />
 
       <main>
-        <Hero />
+        <Hero spotlight={data?.hero_spotlight} />
         <FindAPro />
-        <Achievement />
-        <BrowsByCategory />
+        <Achievement metrics={data?.metrics} />
+        <BrowsByCategory
+          categories={data?.categories}
+          error={error}
+          onRetry={refetch}
+        />
         <WhyChooseUs />
         <SimpleAndFast />
-        <CustomerStories />
+        <CustomerStories testimonials={data?.testimonials} />
         <Career />
       </main>
     </>

@@ -1,17 +1,18 @@
-import { formatPrice, type Product } from "@/pages/marketplace/data/products";
+import ProductImage from "@/components/shared/product-image";
+import type { ProductCard as ProductCardData } from "@/services/marketplace";
 import { Link } from "react-router";
 import { browseProducts } from "../data/browse-products";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border border-[#e6eaf2] bg-white">
       <div className="relative h-40">
-        <img
+        <ProductImage
           src={product.image}
           alt={product.name}
-          className="absolute inset-0 size-full object-cover"
+          className="absolute inset-0 size-full"
         />
-        {product.elite && (
+        {product.is_elite_tier && (
           <span className="absolute top-2.5 left-2.5 rounded-full bg-[#e9b347] px-2 py-0.75 text-[10px] leading-[normal] font-bold text-[#26225f] uppercase">
             {browseProducts.badge}
           </span>
@@ -23,9 +24,11 @@ export default function ProductCard({ product }: { product: Product }) {
           <h3 className="text-[15px] font-bold text-[#1e293b]">
             {product.name}
           </h3>
-          <p className="text-xs text-[#64748b]">{product.seller}</p>
+          <p className="text-xs text-[#64748b]">
+            {product.seller.business_name}
+          </p>
           <p className="text-[17px] font-bold text-[#c92032]">
-            {formatPrice(product.price)}
+            {product.price_display}
           </p>
         </div>
 

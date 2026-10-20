@@ -9,7 +9,8 @@ const copy = onboarding.verification;
 
 type StepVerificationProps = {
   verified: boolean;
-  onVerified: () => void;
+  // Records the verification with the API; rejects with a message on failure
+  onVerify: () => Promise<void>;
   onFailed: () => void;
   onSubmit: () => void;
   onBack: () => void;
@@ -17,22 +18,32 @@ type StepVerificationProps = {
 
 export default function StepVerification({
   verified,
-  onVerified,
+  onVerify,
   onFailed,
   onSubmit,
   onBack,
 }: StepVerificationProps) {
   const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
 
-  // Placeholder for the ID.me OAuth hand-off; `?idme=fail` previews the failure screen
-  const verify = () => {
+  // Placeholder for the ID.me OAuth hand-off: the API's id-me endpoint is a stub that
+  // marks the business verified. `?idme=fail` previews the failure screen.
+  const verify = async () => {
+    if (new URLSearchParams(window.location.search).get("idme") === "fail") {
+      onFailed();
+      return;
+    }
     setVerifying(true);
-    setTimeout(() => {
+    setError("");
+    try {
+      await onVerify();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Verification failed. Try again.",
+      );
+    } finally {
       setVerifying(false);
-      if (new URLSearchParams(window.location.search).get("idme") === "fail")
-        onFailed();
-      else onVerified();
-    }, 1200);
+    }
   };
 
   return (
@@ -73,6 +84,11 @@ export default function StepVerification({
             )}
             {copy.cta}
           </button>
+        )}
+        {error && (
+          <p role="alert" className="pt-3 text-center text-sm text-[#c92032]">
+            {error}
+          </p>
         )}
       </div>
 

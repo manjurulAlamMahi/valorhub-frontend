@@ -1,28 +1,28 @@
-import { faker } from "@faker-js/faker";
+import type { PlatformMetrics } from "@/services/public";
 
-export const achievements = [
+export const achievements: {
+  key: keyof PlatformMetrics;
+  label: string;
+  icon: string;
+}[] = [
   {
-    id: faker.string.uuid(),
+    key: "verified_pros_display",
     label: "Verified Professionals",
-    value: "50,000+",
     icon: "/images/home/achievements/verified-professionals.png",
   },
   {
-    id: faker.string.uuid(),
+    key: "jobs_completed_display",
     label: "Jobs Completed",
-    value: "1.2M+",
     icon: "/images/home/achievements/jobs-completed.png",
   },
   {
-    id: faker.string.uuid(),
+    key: "cities_served_display",
     label: "Cities Served",
-    value: "850+",
     icon: "/images/home/achievements/cities-served.png",
   },
   {
-    id: faker.string.uuid(),
+    key: "customer_satisfaction_rate",
     label: "Customer Satisfaction",
-    value: "98.7%",
     icon: "/images/home/achievements/customer-satisfaction.png",
   },
 ];

@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import { requestQuote } from "../data/request-quote";
 
 const { actions } = requestQuote;
@@ -11,6 +11,11 @@ type StepCardProps = {
   isLast?: boolean;
   submitting?: boolean;
   error?: string;
+  // Shown above the actions, e.g. the log-in prompt on the review step
+  notice?: ReactNode;
+  // Replaces the default Continue/Submit label
+  nextLabel?: string;
+  nextDisabled?: boolean;
   onPrevious: () => void;
   onNext: () => void;
 };
@@ -22,6 +27,9 @@ export default function StepCard({
   isLast = false,
   submitting = false,
   error,
+  notice,
+  nextLabel,
+  nextDisabled = false,
   onPrevious,
   onNext,
   children,
@@ -41,6 +49,8 @@ export default function StepCard({
         </p>
       )}
 
+      {notice && <div className="pt-4">{notice}</div>}
+
       <div className="flex justify-between gap-3 pt-8">
         <button
           type="button"
@@ -55,14 +65,15 @@ export default function StepCard({
         <button
           type="button"
           onClick={onNext}
-          disabled={submitting}
+          disabled={submitting || nextDisabled}
           className="flex items-center justify-center gap-2.5 rounded-xl bg-[#c92032] px-6 py-3 text-sm leading-5 font-semibold text-white transition-colors hover:bg-[#c92032]/90 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-40.75"
         >
-          {isLast
-            ? submitting
-              ? actions.submitting
-              : actions.submit
-            : actions.next}
+          {nextLabel ??
+            (isLast
+              ? submitting
+                ? actions.submitting
+                : actions.submit
+              : actions.next)}
           <ArrowRight aria-hidden className="size-4" />
         </button>
       </div>

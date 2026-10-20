@@ -1,3 +1,5 @@
+import type { MembershipPlan } from "@/services/onboarding";
+
 export type Stage =
   | "account"
   | "membership"
@@ -20,6 +22,8 @@ export type Plan = {
   features: string[];
   // null = unlimited
   serviceLimit: number | null;
+  // Price for a year when billed annually (from the API); falls back to the 20% formula
+  annualPrice?: number;
 };
 
 export const businessTypes = [
@@ -29,71 +33,20 @@ export const businessTypes = [
   "Partnership",
 ] as const;
 
-export const businessCategories = [
-  "Blue Collar",
-  "White Collar",
-  "Grey Collar",
-  "Gold Collar",
-  "Other",
-] as const;
-
-// Mirrors the backend SubscriptionPlanSeeder
-export const plans: Plan[] = [
-  {
-    id: 1,
-    name: "Free Verified Membership",
-    slug: "free",
-    monthlyPrice: 0,
-    isPopular: true,
-    serviceLimit: 3,
-    features: [
-      "Maximum 3 services",
-      "Basic business information",
-      "Business logo upload",
-      "No premium features",
-    ],
-  },
-  {
-    id: 2,
-    name: "Pro Verified Membership",
-    slug: "pro",
-    monthlyPrice: 29,
-    isPopular: false,
-    serviceLimit: 10,
-    features: [
-      "10 service listings",
-      "20 photo uploads",
-      "Featured listing",
-      "Priority search ranking",
-      "Standard leads",
-      "Custom business URL",
-    ],
-  },
-  {
-    id: 3,
-    name: "Elite Verified Membership",
-    slug: "elite",
-    monthlyPrice: 49,
-    isPopular: false,
-    serviceLimit: null,
-    features: [
-      "Unlimited services",
-      "20 gallery images",
-      "5 video uploads",
-      "Website & social links",
-      "Brand information",
-      "Business hours & 24/7",
-      "Homepage banner ad",
-      "Featured badge",
-      "Priority marketplace promotion",
-      "Premium support",
-    ],
-  },
-];
+export const toPlan = (plan: MembershipPlan): Plan => ({
+  id: plan.id,
+  name: plan.name,
+  slug: plan.slug,
+  monthlyPrice: plan.monthly_price,
+  isPopular: plan.is_popular,
+  features: plan.features,
+  serviceLimit: plan.limits.service_limit,
+  annualPrice: plan.annual_price ?? undefined,
+});
 
 // Annual billing is 12 months with the advertised 20% discount
 export const annualPrice = (plan: Plan) =>
-  Math.round(plan.monthlyPrice * 12 * 0.8);
+  plan.annualPrice ?? Math.round(plan.monthlyPrice * 12 * 0.8);
 
 export const popularServices = [
   "Plumbing",

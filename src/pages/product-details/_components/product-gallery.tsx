@@ -1,39 +1,43 @@
+import ProductImage from "@/components/shared/product-image";
+import { productImage } from "@/services/marketplace";
 import { useState } from "react";
 
 type ProductGalleryProps = {
   name: string;
-  images: string[];
+  images: (string | null)[];
 };
 
 export default function ProductGallery({ name, images }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
   const thumbs = images
     .map((image, index) => ({ image, index }))
-    .filter(({ index }) => index !== active)
+    .filter(({ image, index }) => index !== active && productImage(image))
     .slice(0, 4);
 
   return (
     <div className="space-y-2.5">
-      <img
+      <ProductImage
         src={images[active]}
         alt={name}
-        className="h-64 w-full rounded-2xl object-cover sm:h-95"
+        className="h-64 w-full rounded-2xl sm:h-95"
       />
 
-      <ul className="grid grid-cols-4 gap-2.5">
-        {thumbs.map(({ image, index }) => (
-          <li key={index}>
-            <button
-              type="button"
-              aria-label={`Show image ${index + 1}`}
-              onClick={() => setActive(index)}
-              className="block w-full overflow-hidden rounded-[10px] transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#c92032]"
-            >
-              <img src={image} alt="" className="h-20 w-full object-cover" />
-            </button>
-          </li>
-        ))}
-      </ul>
+      {thumbs.length > 0 && (
+        <ul className="grid grid-cols-4 gap-2.5">
+          {thumbs.map(({ image, index }) => (
+            <li key={index}>
+              <button
+                type="button"
+                aria-label={`Show image ${index + 1}`}
+                onClick={() => setActive(index)}
+                className="block w-full overflow-hidden rounded-[10px] transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#c92032]"
+              >
+                <ProductImage src={image} alt="" className="h-20 w-full" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

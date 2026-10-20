@@ -7,6 +7,7 @@ import {
   Scissors,
   Wrench,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 
 export type QuoteFormValues = {
@@ -33,8 +34,21 @@ export const initialValues: QuoteFormValues = {
   state: "",
 };
 
-// Keys and labels mirror Backend QuoteRequestController::config()
+// Options come from GET /quotes/wizard-config; icons are matched by service key
+export const serviceIcons: Record<string, LucideIcon> = {
+  roofing: House,
+  hvac: Zap,
+  electrical: Cpu,
+  landscaping: Scissors,
+  plumbing: Wrench,
+  painting: Paintbrush,
+  contracting: Hammer,
+  other: Box,
+};
+
 export const requestQuote = {
+  // The API has no upload endpoint for quote photos yet; flip on once it does
+  photoUploads: false,
   title: "Request a Quote",
   back: "Back to Profile",
   backFallback: "Back",
@@ -55,16 +69,6 @@ export const requestQuote = {
     title: "What service do you need?",
     description: "Select the type of service for your project.",
     error: "Please select a service.",
-    options: [
-      { key: "roofing", label: "Roofing", icon: House },
-      { key: "hvac", label: "HVAC", icon: Zap },
-      { key: "electrical", label: "Electrical", icon: Cpu },
-      { key: "landscaping", label: "Landscaping", icon: Scissors },
-      { key: "plumbing", label: "Plumbing", icon: Wrench },
-      { key: "painting", label: "Painting", icon: Paintbrush },
-      { key: "contracting", label: "Contracting", icon: Hammer },
-      { key: "other", label: "Other", icon: Box },
-    ],
   },
   description: {
     title: "Describe your project",
@@ -89,18 +93,6 @@ export const requestQuote = {
     timelineLabel: "When do you need this done?",
     budgetError: "Please select a budget range.",
     timelineError: "Please select when you need this done.",
-    budgets: [
-      { key: "under_1000", label: "Under $1,000" },
-      { key: "1000_5000", label: "$1,000–$5,000" },
-      { key: "5000_15000", label: "$5,000–$15,000" },
-      { key: "15000_plus", label: "$15,000+" },
-    ],
-    timelines: [
-      { key: "asap", label: "ASAP" },
-      { key: "within_1_week", label: "Within 1 week" },
-      { key: "within_1_month", label: "Within 1 month" },
-      { key: "flexible", label: "Flexible" },
-    ],
   },
   location: {
     title: "Project Location",
@@ -134,6 +126,13 @@ export const requestQuote = {
     },
     recipientNote: "They will respond with a detailed quote within 24 hours.",
     nearbyRecipient: "nearby contractors",
+  },
+  auth: {
+    guest: "Log in or create a free account to send your request.",
+    login: "Log in to submit",
+    register: "Create an account",
+    business:
+      "Quote requests are sent from customer accounts. Log out of your business account to request a quote.",
   },
   success: {
     title: "Request submitted!",

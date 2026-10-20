@@ -1,17 +1,19 @@
+import { mediaUrl } from "@/lib/media";
 import { contractorProfile } from "../data/contractor-profile";
 import ProfileSection from "./profile-section";
 
-const { gallery } = contractorProfile;
+export default function ProjectGallery({ images }: { images: string[] }) {
+  if (images.length === 0) return null;
 
-export default function ProjectGallery() {
   return (
-    <ProfileSection title={gallery.title}>
+    <ProfileSection title={contractorProfile.gallery.title}>
       <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {gallery.images.map((image, index) => (
-          <li key={index}>
+        {images.map((image, index) => (
+          <li key={image}>
             <img
-              src={image}
+              src={mediaUrl(image) ?? undefined}
               alt={`Project ${index + 1}`}
+              loading="lazy"
               className="h-37 w-full rounded-2xl bg-[#d9d9d9] object-cover"
             />
           </li>

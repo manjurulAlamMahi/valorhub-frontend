@@ -1,3 +1,5 @@
+import { ApiError } from "@/lib/api";
+import type { CheckoutPayload } from "@/services/onboarding";
 import { ArrowLeft, Lock } from "lucide-react";
 import { useState, type InputHTMLAttributes } from "react";
 import { onboarding, type Plan } from "../data/onboarding";
@@ -6,7 +8,8 @@ import StepForm from "./step-form";
 type CheckoutProps = {
   plan: Plan;
   onBack: () => void;
-  onSubmit: () => void;
+  // Charges the card through the API, then advances the flow
+  onSubmit: (payload: CheckoutPayload) => Promise<void>;
 };
 
 const formatCard = (value: string) =>
@@ -67,6 +70,8 @@ export default function Checkout({ plan, onBack, onSubmit }: CheckoutProps) {
   const [errors, setErrors] = useState<
     Partial<Record<keyof typeof card, string>>
   >({});
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const price = `$${plan.monthlyPrice.toFixed(2)}`;
   const tier = plan.slug.toUpperCase();
 
@@ -75,7 +80,7 @@ export default function Checkout({ plan, onBack, onSubmit }: CheckoutProps) {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const next: typeof errors = {};
     if (card.number.replace(/\D/g, "").length < 15)
       next.number = "Enter a valid card number.";
@@ -85,7 +90,25 @@ export default function Checkout({ plan, onBack, onSubmit }: CheckoutProps) {
     if (!/^\d{3,4}$/.test(card.cvc)) next.cvc = "Enter a valid CVC.";
     if (!/^\d{5}$/.test(card.zip)) next.zip = "Enter a valid ZIP code.";
     setErrors(next);
-    if (Object.keys(next).length === 0) onSubmit();
+    if (Object.keys(next).length > 0) return;
+
+    setSubmitting(true);
+    setFormError("");
+    try {
+      await onSubmit({
+        card_number: card.number.replace(/\D/g, ""),
+        exp_month: month,
+        exp_year: 2000 + year,
+        cvc: card.cvc,
+      });
+    } catch (error) {
+      setFormError(
+        error instanceof ApiError
+          ? error.message
+          : "Payment failed. Please try again.",
+      );
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -183,11 +206,17 @@ export default function Checkout({ plan, onBack, onSubmit }: CheckoutProps) {
             value={card.coupon}
             onChange={(event) => update("coupon", event.target.value)}
           />
+          {formError && (
+            <p role="alert" className="text-sm text-[#c92032]">
+              {formError}
+            </p>
+          )}
           <button
             type="submit"
-            className="h-12 w-full rounded-xl bg-[#c92032] text-base font-bold text-white hover:bg-[#a51a27]"
+            disabled={submitting}
+            className="h-12 w-full rounded-xl bg-[#c92032] text-base font-bold text-white hover:bg-[#a51a27] disabled:opacity-70"
           >
-            Start for $0.00
+            {submitting ? "Processing…" : "Start for $0.00"}
           </button>
           <p className="flex items-center justify-center gap-1.5 text-xs text-[#64748b]">
             <Lock aria-hidden className="size-3.5" />

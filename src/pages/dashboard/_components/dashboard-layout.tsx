@@ -1,18 +1,10 @@
 import { SEO } from "@/components/seo/SEO";
-import { useReducer } from "react";
 import { Outlet } from "react-router";
-import {
-  DashboardContext,
-  dashboardReducer,
-  initialDashboardState,
-} from "../data/dashboard-store";
 import DashboardSidebar from "./dashboard-sidebar";
 
 export default function DashboardLayout() {
-  const [state, dispatch] = useReducer(dashboardReducer, initialDashboardState);
-
   return (
-    <DashboardContext.Provider value={{ state, dispatch }}>
+    <>
       <SEO
         title="My Dashboard"
         description="Manage your ValorHub service requests, quotes, invoices, and messages."
@@ -24,6 +16,6 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
       </main>
-    </DashboardContext.Provider>
+    </>
   );
 }

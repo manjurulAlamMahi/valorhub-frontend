@@ -1,6 +1,6 @@
 import { Camera } from "lucide-react";
 import { useState } from "react";
-import { businessCategories, onboarding } from "../data/onboarding";
+import { onboarding } from "../data/onboarding";
 import type { StepProps } from "../data/onboarding-state";
 import {
   ContinueButton,
@@ -18,8 +18,13 @@ export default function StepBusinessInfo({
   onChange,
   onSubmit,
   onBack,
-}: StepProps) {
+  categories,
+}: StepProps & { categories: { id: number; name: string }[] }) {
   const [uploadError, setUploadError] = useState("");
+  // The radio group works with labels; the form stores the backend category id
+  const selected = categories.find(
+    (category) => String(category.id) === values.category,
+  );
 
   return (
     <StepCard
@@ -71,16 +76,22 @@ export default function StepBusinessInfo({
           label="Business Description"
           placeholder="Describe your business, expertise, and what makes you unique..."
           value={values.description}
+          error={errors.description}
           onChange={(event) => onChange("description", event.target.value)}
         />
         <OptionGroup
           id="category"
           label="Business Category"
           size="sm"
-          options={businessCategories}
-          value={values.category}
+          options={categories.map((category) => category.name)}
+          value={selected?.name ?? ""}
           error={errors.category}
-          onChange={(value) => onChange("category", value)}
+          onChange={(name) =>
+            onChange(
+              "category",
+              String(categories.find((item) => item.name === name)?.id ?? ""),
+            )
+          }
           className="grid-cols-2 sm:grid-cols-3"
         />
         <TextField

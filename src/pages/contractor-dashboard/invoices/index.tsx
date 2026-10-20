@@ -1,7 +1,15 @@
 import { SEO } from "@/components/seo/SEO";
+import Pagination from "@/components/shared/pagination";
+import QueryBoundary from "@/components/shared/query-boundary";
+import { useApi } from "@/hooks/use-api";
 import { cn } from "@/lib/utils";
+import type {
+  ContractorInvoice,
+  InvoiceCustomer,
+  InvoicesData,
+  InvoiceStatus,
+} from "@/services/contractor";
 import {
-  ArrowRight,
   Banknote,
   CalendarDays,
   FileText,
@@ -10,19 +18,12 @@ import {
   TriangleAlert,
   Wallet,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import { Link } from "react-router";
+import { useDebounceValue } from "usehooks-ts";
 import MarkPaidModal from "../_components/mark-paid-modal";
 import SendInvoiceModal from "../_components/send-invoice-modal";
-import { Link, useLocation } from "react-router";
-import {
-  formatDate,
-  formatMoney,
-  invoices as initialInvoices,
-  invoiceStatuses,
-  plural,
-  type Invoice,
-  type InvoiceStatus,
-} from "../data/invoices";
+import { formatMoney, invoiceStatuses } from "../data/invoices";
 
 const BASE = "/contractor/dashboard/invoices";
 type StatusFilter = "all" | InvoiceStatus;
@@ -50,7 +51,7 @@ function StatCard({
   box: string;
   value: string;
   label: string;
-  note: string;
+  note?: string;
   noteClass: string;
 }) {
   return (
@@ -62,65 +63,54 @@ function StatCard({
       <p className="pt-0.5 text-xs leading-4 font-medium text-[#64748b]">
         {label}
       </p>
-      <p className={cn("pt-0.5 text-xs leading-4", noteClass)}>{note}</p>
+      {note && (
+        <p className={cn("pt-0.5 text-xs leading-4", noteClass)}>{note}</p>
+      )}
     </div>
   );
 }
 
 export default function Invoices() {
-  const routeState = useLocation().state as {
-    created?: Invoice;
-    deleted?: string;
-  } | null;
-  // New and deleted invoices arrive via router state from the other invoice pages
-  const [items, setItems] = useState(() =>
-    [
-      ...(routeState?.created ? [routeState.created] : []),
-      ...initialInvoices,
-    ].filter((item) => item.id !== routeState?.deleted),
-  );
   const [status, setStatus] = useState<StatusFilter>("all");
-  const [customer, setCustomer] = useState("all");
+  const [customerId, setCustomerId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [number, setNumber] = useState("");
+  const [search] = useDebounceValue(number.trim(), 300);
+  const [page, setPage] = useState(1);
 
-  const sum = (list: typeof items) =>
-    list.reduce((total, item) => total + item.amount, 0);
-  const byStatus = (value: InvoiceStatus) =>
-    items.filter((item) => item.status === value);
-  const outstanding = items.filter(
-    (item) => item.status === "pending" || item.status === "overdue",
-  );
-  const paid = byStatus("paid");
-  const overdue = byStatus("overdue");
-  const drafts = byStatus("draft");
+  const query = useApi<InvoicesData>("/contractor/invoices", {
+    status: status === "all" ? null : status,
+    customer_id: customerId || null,
+    from: from || null,
+    to: to || null,
+    search,
+    page,
+  });
+  const customers = useApi<InvoiceCustomer[]>("/contractor/customers", {
+    limit: 100,
+  });
 
-  const customers = [...new Set(items.map((item) => item.customer))].sort();
-  const search = number
-    .trim()
-    .toLowerCase()
-    .replace(/^inv-?/, "");
-  const visible = items.filter(
-    (item) =>
-      (status === "all" || item.status === status) &&
-      (customer === "all" || item.customer === customer) &&
-      (!from || item.issued >= from) &&
-      (!to || item.issued <= to) &&
-      (!search || item.id.toLowerCase().includes(search)),
-  );
+  // Every filter change starts from page 1
+  const filter =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setPage(1);
+    };
 
   // Mark Paid and Send confirm in a dialog before changing the status
   const [dialog, setDialog] = useState<{
     type: "paid" | "send";
-    invoice: Invoice;
+    invoice: ContractorInvoice;
   } | null>(null);
-  const closeDialog = () => setDialog(null);
+  const closeDialog = useCallback(() => setDialog(null), []);
+  const done = () => {
+    setDialog(null);
+    query.refetch();
+  };
 
-  const setInvoiceStatus = (id: string, next: InvoiceStatus) =>
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: next } : item)),
-    );
+  const summary = query.data?.summary;
 
   return (
     <>
@@ -131,81 +121,92 @@ export default function Invoices() {
       />
 
       <div className="space-y-4 p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <StatCard
-            icon={<Wallet aria-hidden className="size-5 text-[#f59e0b]" />}
-            box="bg-[#fffbeb]"
-            value={formatMoney(sum(outstanding))}
-            label="Total Outstanding"
-            note={plural(outstanding.length, "invoice")}
-            noteClass="text-[#f59e0b]"
-          />
-          <StatCard
-            icon={<Banknote aria-hidden className="size-5 text-[#10b981]" />}
-            box="bg-[#ecfdf5]"
-            value={formatMoney(sum(paid))}
-            label="Paid This Month"
-            note={plural(paid.length, "invoice")}
-            noteClass="text-[#10b981]"
-          />
-          <StatCard
-            icon={
-              <TriangleAlert aria-hidden className="size-5 text-[#c41e3a]" />
-            }
-            box="bg-[#fef2f2]"
-            value={formatMoney(sum(overdue))}
-            label="Overdue"
-            note={plural(overdue.length, "invoice")}
-            noteClass="text-[#c41e3a]"
-          />
-          <StatCard
-            icon={<FileText aria-hidden className="size-5 text-[#64748b]" />}
-            box="bg-[#f1f5f9]"
-            value={formatMoney(sum(drafts))}
-            label="Draft"
-            note={plural(drafts.length, "draft")}
-            noteClass="text-[#64748b]"
-          />
-        </div>
+        {summary && (
+          <>
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+              <StatCard
+                icon={<Wallet aria-hidden className="size-5 text-[#f59e0b]" />}
+                box="bg-[#fffbeb]"
+                value={summary.total_outstanding.display}
+                label="Total Outstanding"
+                note={summary.total_outstanding.label}
+                noteClass="text-[#f59e0b]"
+              />
+              <StatCard
+                icon={
+                  <Banknote aria-hidden className="size-5 text-[#10b981]" />
+                }
+                box="bg-[#ecfdf5]"
+                value={summary.paid_this_month.display}
+                label="Paid This Month"
+                noteClass="text-[#10b981]"
+              />
+              <StatCard
+                icon={
+                  <TriangleAlert
+                    aria-hidden
+                    className="size-5 text-[#c41e3a]"
+                  />
+                }
+                box="bg-[#fef2f2]"
+                value={summary.overdue.display}
+                label="Overdue"
+                note={summary.overdue.label}
+                noteClass="text-[#c41e3a]"
+              />
+              <StatCard
+                icon={
+                  <FileText aria-hidden className="size-5 text-[#64748b]" />
+                }
+                box="bg-[#f1f5f9]"
+                value={summary.draft.display}
+                label="Draft"
+                note={summary.draft.label}
+                noteClass="text-[#64748b]"
+              />
+            </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2.5 rounded-xl border border-[#e5e8ed] bg-white p-5">
-            <span
-              aria-hidden
-              className="grid size-8 place-content-center rounded-lg bg-[#e5f0ff] text-base"
-            >
-              ⏱
-            </span>
-            <p className="text-[22px] font-bold text-[#212633]">9 days</p>
-            <p className="text-[13px] text-[#8c949e]">
-              Average Time to Get Paid
-            </p>
-            <p className="text-xs font-medium text-[#8c949e]">
-              Based on last 90 days
-            </p>
-          </div>
-          <div className="space-y-2.5 rounded-xl border border-[#e5e8ed] bg-white p-5">
-            <span
-              aria-hidden
-              className="grid size-8 place-content-center rounded-lg bg-[#e5f5ed] text-base"
-            >
-              ⏱
-            </span>
-            <p className="text-[22px] font-bold text-[#212633]">
-              {formatMoney(0, true)}
-            </p>
-            <p className="text-[13px] text-[#8c949e]">
-              Available for Instant Payout
-            </p>
-            <Link
-              to={`${BASE}/payouts`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#268c59] hover:underline"
-            >
-              Pay out now
-              <ArrowRight aria-hidden className="size-3" />
-            </Link>
-          </div>
-        </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2.5 rounded-xl border border-[#e5e8ed] bg-white p-5">
+                <span
+                  aria-hidden
+                  className="grid size-8 place-content-center rounded-lg bg-[#e5f0ff] text-base"
+                >
+                  ⏱
+                </span>
+                <p className="text-[22px] font-bold text-[#212633]">
+                  {summary.average_days_to_get_paid.display}
+                </p>
+                <p className="text-[13px] text-[#8c949e]">
+                  Average Time to Get Paid
+                </p>
+                <p className="text-xs font-medium text-[#8c949e]">
+                  {summary.average_days_to_get_paid.label}
+                </p>
+              </div>
+              <div className="space-y-2.5 rounded-xl border border-[#e5e8ed] bg-white p-5">
+                <span
+                  aria-hidden
+                  className="grid size-8 place-content-center rounded-lg bg-[#e5f5ed] text-base"
+                >
+                  ⏱
+                </span>
+                <p className="text-[22px] font-bold text-[#212633]">
+                  {summary.available_for_payout.display}
+                </p>
+                <p className="text-[13px] text-[#8c949e]">
+                  Available for Instant Payout
+                </p>
+                {/* No payout provider is connected in the API yet */}
+                {!summary.available_for_payout.payouts_enabled && (
+                  <p className="text-xs font-medium text-[#8c949e]">
+                    Instant payouts are coming soon
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="flex flex-wrap items-center gap-2.5 pt-2">
           <label className="sr-only" htmlFor="invoice-customer">
@@ -213,15 +214,17 @@ export default function Invoices() {
           </label>
           <select
             id="invoice-customer"
-            value={customer}
-            onChange={(event) => setCustomer(event.target.value)}
+            value={customerId}
+            onChange={(event) => filter(setCustomerId)(event.target.value)}
             className={cn(filterControl, "w-40", {
-              "text-[#8c949e]": customer === "all",
+              "text-[#8c949e]": !customerId,
             })}
           >
-            <option value="all">All customers</option>
-            {customers.map((name) => (
-              <option key={name}>{name}</option>
+            <option value="">All customers</option>
+            {customers.data?.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
             ))}
           </select>
           <label className="sr-only" htmlFor="invoice-status">
@@ -230,7 +233,9 @@ export default function Invoices() {
           <select
             id="invoice-status"
             value={status}
-            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+            onChange={(event) =>
+              filter(setStatus)(event.target.value as StatusFilter)
+            }
             className={cn(filterControl, "w-35", {
               "text-[#8c949e]": status === "all",
             })}
@@ -247,9 +252,14 @@ export default function Invoices() {
               id: "invoice-from",
               label: "From",
               value: from,
-              onChange: setFrom,
+              onChange: filter(setFrom),
             },
-            { id: "invoice-to", label: "To", value: to, onChange: setTo },
+            {
+              id: "invoice-to",
+              label: "To",
+              value: to,
+              onChange: filter(setTo),
+            },
           ].map((field) => (
             <label
               key={field.id}
@@ -285,14 +295,14 @@ export default function Invoices() {
               className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-[#8c949e]"
             />
             <label className="sr-only" htmlFor="invoice-number">
-              Invoice number
+              Invoice number or customer
             </label>
             <input
               id="invoice-number"
               type="search"
               value={number}
-              onChange={(event) => setNumber(event.target.value)}
-              placeholder="Enter invoice #"
+              onChange={(event) => filter(setNumber)(event.target.value)}
+              placeholder="Invoice # or customer"
               className={cn(
                 filterControl,
                 "w-full pl-8 placeholder:text-[#8c949e]",
@@ -315,15 +325,20 @@ export default function Invoices() {
                   role="tab"
                   aria-selected={status === tab.value}
                   aria-controls="invoice-table"
-                  onClick={() => setStatus(tab.value)}
+                  onClick={() => filter(setStatus)(tab.value)}
                   className={cn(
-                    "h-7 rounded-full px-3.5 text-xs leading-4 font-semibold transition-colors",
+                    "flex h-7 items-center gap-1 rounded-full px-3.5 text-xs leading-4 font-semibold transition-colors",
                     status === tab.value
                       ? "bg-[#262262] text-white"
                       : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]",
                   )}
                 >
                   {tab.label}
+                  {query.data && (
+                    <span className="opacity-60">
+                      {query.data.counts[tab.value]}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -339,132 +354,150 @@ export default function Invoices() {
           <div
             id="invoice-table"
             role="tabpanel"
-            className="relative overflow-x-auto"
+            className={cn("relative overflow-x-auto transition-opacity", {
+              "opacity-60": query.isLoading && query.data,
+            })}
           >
-            <table className="w-full min-w-245 text-left text-sm leading-5">
-              <thead className="border-b border-[#e2e8f0] bg-[#f8fafc] text-xs leading-4 font-semibold text-[#64748b]">
-                <tr>
-                  {[
-                    "Invoice",
-                    "Customer",
-                    "Project",
-                    "Amount",
-                    "Issued",
-                    "Due Date",
-                    "Status",
-                    "Actions",
-                  ].map((heading) => (
-                    <th
-                      key={heading}
-                      scope="col"
-                      className="px-5 py-3 font-semibold first:pl-5"
-                    >
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((invoice) => {
-                  const status = invoiceStatuses[invoice.status];
-                  const action =
-                    invoice.status === "pending" || invoice.status === "overdue"
-                      ? {
-                          label: "Mark Paid",
-                          next: "paid" as const,
-                          className: "text-[#f59e0b]",
-                        }
-                      : invoice.status === "draft"
-                        ? {
-                            label: "Send",
-                            next: "pending" as const,
-                            className: "text-[#10b981]",
-                          }
-                        : null;
-                  return (
-                    <tr
-                      key={invoice.id}
-                      className="border-b border-[#e6eaf2] last:border-b-0"
-                    >
-                      <th
-                        scope="row"
-                        className="px-5 py-4 font-semibold text-[#1b3a6b]"
-                      >
-                        {invoice.id}
-                      </th>
-                      <td className="px-5 py-4 text-[#0f172a]">
-                        {invoice.customer}
-                      </td>
-                      <td className="px-5 py-4 text-[#64748b]">
-                        {invoice.project}
-                      </td>
-                      <td className="px-5 py-4 font-semibold text-[#0f172a]">
-                        {formatMoney(invoice.amount)}
-                      </td>
-                      <td className="px-5 py-4 text-[#64748b]">
-                        {formatDate(invoice.issued)}
-                      </td>
-                      <td
-                        className={cn("px-5 py-4 text-[#64748b]", {
-                          "text-[#c41e3a]": invoice.status === "overdue",
-                        })}
-                      >
-                        {formatDate(invoice.due)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full px-2.5 py-0.5 text-xs leading-4 font-semibold",
-                            status.className,
-                          )}
-                        >
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex w-63.5 items-center justify-between gap-4 text-xs leading-4 font-medium">
-                          <Link
-                            to={`${BASE}/${invoice.id}`}
-                            state={
-                              invoice.id === routeState?.created?.id
-                                ? { created: routeState.created }
-                                : undefined
-                            }
-                            className="text-[#1b3a6b] hover:underline"
+            <QueryBoundary query={query}>
+              {({ items, pagination }) => (
+                <>
+                  <table className="w-full min-w-245 text-left text-sm leading-5">
+                    <thead className="border-b border-[#e2e8f0] bg-[#f8fafc] text-xs leading-4 font-semibold text-[#64748b]">
+                      <tr>
+                        {[
+                          "Invoice",
+                          "Customer",
+                          "Project",
+                          "Amount",
+                          "Issued",
+                          "Due Date",
+                          "Status",
+                          "Actions",
+                        ].map((heading) => (
+                          <th
+                            key={heading}
+                            scope="col"
+                            className="px-5 py-3 font-semibold first:pl-5"
                           >
-                            View<span className="sr-only"> {invoice.id}</span>
-                          </Link>
-                          {action && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setDialog({
-                                  type:
-                                    action.next === "paid" ? "paid" : "send",
-                                  invoice,
-                                })
+                            {heading}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((invoice) => {
+                        const pill = invoiceStatuses[invoice.status];
+                        const action =
+                          invoice.status === "pending" ||
+                          invoice.status === "overdue"
+                            ? {
+                                label: "Mark Paid",
+                                type: "paid" as const,
+                                className: "text-[#f59e0b]",
                               }
-                              className={cn(
-                                "hover:underline",
-                                action.className,
-                              )}
+                            : invoice.status === "draft"
+                              ? {
+                                  label: "Send",
+                                  type: "send" as const,
+                                  className: "text-[#10b981]",
+                                }
+                              : null;
+                        return (
+                          <tr
+                            key={invoice.id}
+                            className="border-b border-[#e6eaf2] last:border-b-0"
+                          >
+                            <th
+                              scope="row"
+                              className="px-5 py-4 font-semibold text-[#1b3a6b]"
                             >
-                              {action.label}
-                              <span className="sr-only"> {invoice.id}</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {visible.length === 0 && (
-              <p className="p-10 text-center text-sm text-[#64748b]">
-                No invoices match these filters.
-              </p>
-            )}
+                              {invoice.invoice_number}
+                            </th>
+                            <td className="px-5 py-4 text-[#0f172a]">
+                              {invoice.customer.name}
+                            </td>
+                            <td className="px-5 py-4 text-[#64748b]">
+                              {invoice.project?.title ??
+                                invoice.items[0]?.name ??
+                                "—"}
+                            </td>
+                            <td className="px-5 py-4 font-semibold text-[#0f172a]">
+                              {formatMoney(invoice.amount, true)}
+                            </td>
+                            <td className="px-5 py-4 text-[#64748b]">
+                              {invoice.issued_at}
+                            </td>
+                            <td
+                              className={cn("px-5 py-4 text-[#64748b]", {
+                                "text-[#c41e3a]": invoice.status === "overdue",
+                              })}
+                            >
+                              {invoice.due_at}
+                            </td>
+                            <td className="px-5 py-4">
+                              <span
+                                className={cn(
+                                  "inline-flex rounded-full px-2.5 py-0.5 text-xs leading-4 font-semibold",
+                                  pill.className,
+                                )}
+                              >
+                                {pill.label}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="flex w-63.5 items-center justify-between gap-4 text-xs leading-4 font-medium">
+                                <Link
+                                  to={`${BASE}/${invoice.id}`}
+                                  className="text-[#1b3a6b] hover:underline"
+                                >
+                                  View
+                                  <span className="sr-only">
+                                    {" "}
+                                    {invoice.invoice_number}
+                                  </span>
+                                </Link>
+                                {action && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDialog({ type: action.type, invoice })
+                                    }
+                                    className={cn(
+                                      "hover:underline",
+                                      action.className,
+                                    )}
+                                  >
+                                    {action.label}
+                                    <span className="sr-only">
+                                      {" "}
+                                      {invoice.invoice_number}
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {items.length === 0 && (
+                    <p className="p-10 text-center text-sm text-[#64748b]">
+                      {query.data?.counts.all === 0
+                        ? "No invoices yet. Create your first one."
+                        : "No invoices match these filters."}
+                    </p>
+                  )}
+                  <div className="pb-4">
+                    <Pagination
+                      page={pagination.current_page}
+                      totalPages={pagination.last_page}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                </>
+              )}
+            </QueryBoundary>
           </div>
         </section>
       </div>
@@ -473,20 +506,14 @@ export default function Invoices() {
         <MarkPaidModal
           invoice={dialog.invoice}
           onClose={closeDialog}
-          onConfirm={() => {
-            setInvoiceStatus(dialog.invoice.id, "paid");
-            setDialog(null);
-          }}
+          onPaid={done}
         />
       )}
       {dialog?.type === "send" && (
         <SendInvoiceModal
           invoice={dialog.invoice}
           onClose={closeDialog}
-          onSend={() => {
-            setInvoiceStatus(dialog.invoice.id, "pending");
-            setDialog(null);
-          }}
+          onSent={done}
         />
       )}
     </>

@@ -1,16 +1,22 @@
+import type { WizardConfig } from "@/services/quotes";
 import { requestQuote, type QuoteFormValues } from "../data/request-quote";
 
-const { review, service, budgetTimeline } = requestQuote;
+const { review } = requestQuote;
 
 const labelFor = (options: { key: string; label: string }[], key: string) =>
   options.find((option) => option.key === key)?.label ?? "Not specified";
 
 type StepReviewProps = {
+  config: WizardConfig;
   values: QuoteFormValues;
   recipient?: string;
 };
 
-export default function StepReview({ values, recipient }: StepReviewProps) {
+export default function StepReview({
+  config,
+  values,
+  recipient,
+}: StepReviewProps) {
   const location = [
     values.street_address.trim(),
     values.city.trim(),
@@ -22,16 +28,19 @@ export default function StepReview({ values, recipient }: StepReviewProps) {
   const rows = [
     {
       label: review.rows.service,
-      value: labelFor(service.options, values.service),
+      value: labelFor(
+        config.service_options.map(({ key, name }) => ({ key, label: name })),
+        values.service,
+      ),
     },
     { label: review.rows.description, value: values.description.trim() },
     {
       label: review.rows.budget,
-      value: labelFor(budgetTimeline.budgets, values.budget),
+      value: labelFor(config.budget_options, values.budget),
     },
     {
       label: review.rows.timeline,
-      value: labelFor(budgetTimeline.timelines, values.timeline),
+      value: labelFor(config.timeline_options, values.timeline),
     },
     { label: review.rows.location, value: location },
   ];

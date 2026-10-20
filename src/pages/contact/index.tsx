@@ -1,12 +1,16 @@
 import Container from "@/components/shared/container";
 import Section from "@/components/shared/section";
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
 import { breadcrumbSchema } from "@/lib/schemas";
 import ContactDetails from "./_components/contact-details";
 import ContactForm from "./_components/contact-form";
 import { contact } from "./data/contact";
+import type { ContactInfo } from "@/services/public";
 
 export default function Contact() {
+  const { data } = useApi<ContactInfo>("/contact");
+
   return (
     <>
       <SEO
@@ -29,7 +33,7 @@ export default function Contact() {
         <Section>
           <Container className="flex flex-col gap-6 py-10! lg:flex-row lg:items-start xl:max-w-310">
             <ContactForm />
-            <ContactDetails />
+            <ContactDetails details={data?.support_details} />
           </Container>
         </Section>
       </main>

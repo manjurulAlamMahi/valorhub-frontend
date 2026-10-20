@@ -1,14 +1,20 @@
+import { formatPrice } from "@/lib/media";
+import type { ContractorProfile } from "@/services/public";
 import { MapPin } from "lucide-react";
 import { contractorProfile } from "../data/contractor-profile";
 import ProfileSection from "./profile-section";
 
-const { services } = contractorProfile;
+export default function ServicesOffered({
+  services,
+}: {
+  services: ContractorProfile["services"];
+}) {
+  if (services.length === 0) return null;
 
-export default function ServicesOffered() {
   return (
-    <ProfileSection title={services.title}>
+    <ProfileSection title={contractorProfile.services.title}>
       <ul className="grid gap-4 sm:grid-cols-2">
-        {services.items.map((service) => (
+        {services.map((service) => (
           <li
             key={service.id}
             className="space-y-3 rounded-2xl border border-[#ededed] p-4"
@@ -23,12 +29,15 @@ export default function ServicesOffered() {
                   {service.location}
                 </p>
               </div>
-              <p className="text-base leading-[normal] font-bold text-[#0a0a0a]">
-                {service.price}
+              <p className="shrink-0 text-right text-base leading-[normal] font-bold text-[#0a0a0a]">
+                {/* Services added at signup have no price until the contractor sets one */}
+                {service.pricing_type === "custom_quote"
+                  ? "Get a quote"
+                  : formatPrice(service.price, service.unit)}
               </p>
             </div>
             <p className="text-[13.3px] leading-5 text-[#64748b]">
-              {service.experience}
+              {service.experience_display}
             </p>
           </li>
         ))}

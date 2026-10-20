@@ -1,33 +1,31 @@
-import { faker } from "@faker-js/faker";
-
 export const navigationMenu = [
   {
-    id: faker.string.uuid(),
+    id: "home",
     label: "Home",
     href: "/",
   },
   {
-    id: faker.string.uuid(),
+    id: "category",
     label: "Category",
     href: "/category",
   },
   {
-    id: faker.string.uuid(),
+    id: "marketplace",
     label: "Marketplace",
     href: "/marketplace",
   },
   {
-    id: faker.string.uuid(),
+    id: "giving-back",
     label: "Giving Back",
     href: "/giving-back",
   },
   {
-    id: faker.string.uuid(),
+    id: "faq",
     label: "FAQ",
     href: "/faq",
   },
   {
-    id: faker.string.uuid(),
+    id: "contact",
     label: "Contact",
     href: "/contact",
   },

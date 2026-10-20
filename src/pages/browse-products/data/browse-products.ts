@@ -1,25 +1,45 @@
-import { products } from "@/pages/marketplace/data/products";
+import type { ProductCredentialKey } from "@/services/marketplace";
 
-export type ProductFiltersState = {
-  price: [number, number];
-  categories: string[];
-  credentials: string[];
-  inStock: boolean;
-};
+export const PAGE_SIZE = 9;
 
-const prices = products.map((product) => product.price);
-
-export const priceBounds: [number, number] = [
-  Math.floor(Math.min(...prices) / 10) * 10,
-  Math.ceil(Math.max(...prices) / 10) * 10,
+export const credentialKeys: ProductCredentialKey[] = [
+  "is_elite",
+  "is_id_verified",
+  "is_veteran_owned",
 ];
 
-export const initialFilters: ProductFiltersState = {
-  price: priceBounds,
-  categories: [],
-  credentials: [],
-  inStock: false,
+// Filters live in the URL so results are shareable and survive back/forward
+export type ProductFilters = {
+  search: string;
+  categories: number[];
+  min_price: number | null;
+  max_price: number | null;
+  credentials: ProductCredentialKey[];
+  in_stock_only: boolean;
+  page: number;
 };
+
+export function readFilters(params: URLSearchParams): ProductFilters {
+  const price = (key: string) => {
+    const value = params.get(key);
+    return value === null || value === "" || Number.isNaN(Number(value))
+      ? null
+      : Number(value);
+  };
+
+  return {
+    search: params.get("search") ?? "",
+    categories: (params.get("categories") ?? "")
+      .split(",")
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id > 0),
+    min_price: price("min_price"),
+    max_price: price("max_price"),
+    credentials: credentialKeys.filter((key) => params.get(key) === "1"),
+    in_stock_only: params.get("in_stock_only") === "1",
+    page: Math.max(Number(params.get("page")) || 1, 1),
+  };
+}
 
 export const browseProducts = {
   title: "Browse Products",
@@ -38,14 +58,7 @@ export const browseProducts = {
     reset: "Reset all",
     price: "Price range",
     category: "Category",
-    credentials: {
-      label: "Seller credentials",
-      options: [
-        { label: "Elite Member", value: "elite" },
-        { label: "Verified", value: "verified" },
-        { label: "Veteran Owned", value: "veteran" },
-      ],
-    },
+    credentials: "Seller credentials",
     availability: {
       label: "Availability",
       option: "In stock only",

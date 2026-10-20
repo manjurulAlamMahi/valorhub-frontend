@@ -1,22 +1,24 @@
 import { cn } from "@/lib/utils";
+import type { OnboardingReview } from "@/services/onboarding";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { onboarding } from "../data/onboarding";
-import type { OnboardingValues } from "../data/onboarding-state";
 import { FieldError } from "./form-controls";
 import StepCard from "./step-card";
 import StepForm from "./step-form";
 
 type StepReviewProps = {
-  values: OnboardingValues;
-  verified: boolean;
+  // GET /business/onboarding/review — what was actually saved
+  review: OnboardingReview;
+  // documents.license_status from GET /contractor/profile
+  licenseStatus: string;
   onSubmit: () => void;
   onBack: () => void;
 };
 
 export default function StepReview({
-  values,
-  verified,
+  review,
+  licenseStatus,
   onSubmit,
   onBack,
 }: StepReviewProps) {
@@ -24,17 +26,18 @@ export default function StepReview({
   const [error, setError] = useState("");
 
   const rows = [
-    ["Business name", values.businessName],
-    ["Owner", values.ownerName],
-    ["Primary category", values.services[0] ?? values.category],
-    ["Services offered", `${values.services.length} selected`],
-    [
-      "Documents",
-      values.documents.length ? "License & Insurance uploaded" : "Not uploaded",
-    ],
+    ["Business name", review.business_info.business_name],
+    ["Owner", review.account.owner_name],
+    ["Membership", review.membership.plan_name],
+    ["Location", review.business_info.location.replace(/^,\s*/, "")],
+    ["Primary category", review.services[0]?.category],
+    ["Services offered", `${review.services.length} selected`],
+    ["License document", licenseStatus],
     [
       "Veteran verification",
-      verified ? "Verified with ID.me" : "Pending ID.me review",
+      review.verification.is_id_verified
+        ? "Verified with ID.me"
+        : "Pending ID.me review",
     ],
   ];
 
@@ -90,7 +93,7 @@ export default function StepReview({
         </div>
         <button
           type="submit"
-          className="h-12 w-full rounded-xl bg-[#c92032] font-mono text-base font-bold text-white hover:bg-[#a51a27]"
+          className="h-12 w-full rounded-xl bg-[#c92032] font-mono text-base font-bold text-white hover:bg-[#a51a27] disabled:opacity-70"
         >
           {onboarding.review.submit}
         </button>

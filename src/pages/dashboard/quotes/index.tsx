@@ -1,18 +1,34 @@
+import { useApi } from "@/hooks/use-api";
+import { ApiError } from "@/lib/api";
+import { customerApi, type CustomerQuote } from "@/services/customer";
+import { useState } from "react";
 import { ActionButton, ActionLink } from "../_components/action-button";
 import DashboardPage from "../_components/dashboard-page";
+import QueryBoundary from "@/components/shared/query-boundary";
 import StatusBadge from "../_components/status-badge";
-import { formatMoneyShort, quotes, quoteTotal } from "../data/dashboard";
-import { useDashboard } from "../data/dashboard-store";
+
+// The API lists every request sent to a contractor; only these have a real quote
+const QUOTED = ["quoted", "accepted", "declined", "rejected"];
 
 export default function Quotes() {
-  const { state, dispatch } = useDashboard();
+  const query = useApi<CustomerQuote[]>("/customer/quotes");
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [error, setError] = useState("");
 
-  const groups = state.requests
-    .map((request) => ({
-      request,
-      quotes: quotes.filter((quote) => quote.requestId === request.id),
-    }))
-    .filter((group) => group.quotes.length > 0);
+  const accept = async (id: number) => {
+    setBusyId(id);
+    setError("");
+    try {
+      await customerApi.acceptQuote(id);
+      query.refetch();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not accept the quote.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <DashboardPage
@@ -20,29 +36,38 @@ export default function Quotes() {
       title="Quotes"
       description="Quotes received from contractors for your service requests."
     >
-      {groups.map(({ request, quotes: items }) => (
-        <section key={request.id} className="space-y-3">
-          <h2 className="text-base leading-[normal] font-bold text-[#1e293b]">
-            {request.title}
-          </h2>
-          <ul className="space-y-3">
-            {items.map((quote) => {
-              const status = state.quoteStatus[quote.id];
-              return (
+      {error && (
+        <p role="alert" className="text-sm text-[#c92032]">
+          {error}
+        </p>
+      )}
+      <QueryBoundary query={query}>
+        {(data) => {
+          const quotes = data.filter((quote) => QUOTED.includes(quote.status));
+          if (quotes.length === 0) {
+            return (
+              <p className="rounded-xl border border-[#e6eaf2] p-10 text-center text-sm text-[#64748b]">
+                No quotes yet. Contractors usually respond within 24 hours.
+              </p>
+            );
+          }
+          return (
+            <ul className="space-y-3">
+              {quotes.map((quote) => (
                 <li
                   key={quote.id}
                   className="flex flex-wrap items-center gap-4 rounded-xl border border-[#e6eaf2] bg-white p-4.5 leading-[normal]"
                 >
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-[15px] font-medium text-[#1e293b]">
-                      {quote.contractor}
+                      {quote.contractor.business_name}
                     </p>
                     <p className="text-[13px] text-[#64748b]">
-                      {quote.summary}
+                      {quote.project_title} · {quote.estimated_duration}
                     </p>
                   </div>
                   <p className="text-secondary-foreground text-lg font-bold">
-                    {formatMoneyShort(quoteTotal(quote))}
+                    {quote.financials.total_amount_display}
                   </p>
                   <div className="flex flex-wrap items-center gap-2.5">
                     <ActionLink
@@ -51,24 +76,23 @@ export default function Quotes() {
                     >
                       View details
                     </ActionLink>
-                    {status === "pending" ? (
+                    {quote.status === "quoted" ? (
                       <ActionButton
-                        onClick={() =>
-                          dispatch({ type: "acceptQuote", id: quote.id })
-                        }
+                        disabled={busyId === quote.id}
+                        onClick={() => void accept(quote.id)}
                       >
-                        Accept quote
+                        {busyId === quote.id ? "Accepting…" : "Accept quote"}
                       </ActionButton>
                     ) : (
-                      <StatusBadge status={status} />
+                      <StatusBadge status={quote.status} />
                     )}
                   </div>
                 </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+              ))}
+            </ul>
+          );
+        }}
+      </QueryBoundary>
     </DashboardPage>
   );
 }

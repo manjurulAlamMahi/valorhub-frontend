@@ -1,23 +1,44 @@
-export type ContractorFiltersState = {
-  zip: string;
-  credentials: string[];
-  minRating: number;
+import type { CredentialKey } from "@/services/public";
+
+export const PAGE_SIZE = 6;
+
+// Filters live in the URL so results are shareable and survive back/forward
+export type ContractorFilters = {
+  service: string;
+  zip_code: string;
+  credentials: CredentialKey[];
+  min_rating: number | null;
+  page: number;
 };
 
-export const initialFilters: ContractorFiltersState = {
-  zip: "",
-  credentials: [],
-  minRating: 0,
-};
+export const credentialKeys: CredentialKey[] = [
+  "is_veteran_owned",
+  "is_elite",
+  "is_id_verified",
+  "is_available_today",
+];
+
+export function readFilters(params: URLSearchParams): ContractorFilters {
+  const rating = Number(params.get("min_rating"));
+  return {
+    service: params.get("service") ?? "",
+    zip_code: params.get("zip_code") ?? "",
+    credentials: credentialKeys.filter((key) => params.get(key) === "1"),
+    min_rating: rating > 0 ? rating : null,
+    page: Math.max(Number(params.get("page")) || 1, 1),
+  };
+}
 
 export const contractorList = {
   title: "Contractor List",
-  pageSize: 6,
+  allTitle: "All Professionals",
+  allDescription:
+    "Browse verified veteran-owned professionals across the United States.",
   stats: [
-    { value: "180+", label: "Services" },
-    { value: "3,763+", label: "Professionals" },
-    { value: "4.8★", label: "Avg Rating" },
-  ],
+    { key: "services_count_display", label: "Services" },
+    { key: "professionals_count_display", label: "Professionals" },
+    { key: "avg_rating_display", label: "Avg Rating" },
+  ] as const,
   badges: {
     elite: {
       label: "Elite",
@@ -44,34 +65,9 @@ export const contractorList = {
       label: "Zip Code",
       placeholder: "Enter zip code",
     },
-    category: {
-      label: "Category",
-      options: [
-        { label: "Blue Collar", slug: "blue-collar" },
-        { label: "White Collar", slug: "white-collar" },
-        { label: "Grey Collar", slug: "grey-collar" },
-        { label: "Gold Collar", slug: "gold-collar" },
-        { label: "Other Services", slug: "other-services" },
-      ],
-    },
-    credentials: {
-      label: "Credentials",
-      options: [
-        { label: "Veteran Owned", value: "veteran" },
-        { label: "Elite Member", value: "elite" },
-        { label: "Verified", value: "verified" },
-        { label: "Available Today", value: "available" },
-      ],
-    },
-    rating: {
-      label: "Minimum Rating",
-      options: [
-        { label: "Any Rating", value: 0 },
-        { label: "4.5+ Stars", value: 4.5 },
-        { label: "4.0+ Stars", value: 4 },
-        { label: "3.5+ Stars", value: 3.5 },
-      ],
-    },
+    category: { label: "Category" },
+    credentials: { label: "Credentials" },
+    rating: { label: "Minimum Rating" },
   },
   empty: "No contractors match your filters.",
 };

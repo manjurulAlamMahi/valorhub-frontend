@@ -95,11 +95,10 @@ export default function StepBusinessProfile({
           value={values.about}
           onChange={(event) => onChange("about", event.target.value)}
         />
-        {/* License & insurance uploads are a paid-plan feature */}
+        {/* License uploads are a paid-plan feature; the API stores one document */}
         {!free && (
           <UploadBox
             id="documents"
-            multiple
             accept="application/pdf,image/png,image/jpeg"
             maxSize={10}
             files={values.documents}
@@ -109,23 +108,23 @@ export default function StepBusinessProfile({
               setUploadErrors((prev) => ({ ...prev, documents: error }))
             }
             icon={icon}
-            title="Upload License & Insurance Documents"
-            hint="PDF, PNG, or JPG up to 10MB each"
+            title="Upload License Document"
+            hint="PDF, PNG, or JPG up to 10MB"
           />
         )}
         <UploadBox
           id="cover"
           accept="image/png,image/jpeg"
-          maxSize={10}
-          files={values.coverPhoto ? [values.coverPhoto] : []}
-          onChange={(files) => onChange("coverPhoto", files[0] ?? "")}
+          maxSize={5}
+          files={values.coverPhoto}
+          onChange={(files) => onChange("coverPhoto", files)}
           error={uploadErrors.cover}
           onError={(error) =>
             setUploadErrors((prev) => ({ ...prev, cover: error }))
           }
           icon={icon}
           title="Upload Cover Photo"
-          hint="Recommended: 1400 × 400px"
+          hint="PNG or JPG up to 5MB · Recommended: 1400 × 400px"
         />
         <ContinueButton />
       </StepForm>

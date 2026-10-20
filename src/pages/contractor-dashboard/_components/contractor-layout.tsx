@@ -1,13 +1,16 @@
+import UserAvatar from "@/components/shared/user-avatar";
+import { useAuth } from "@/hooks/use-auth";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { Outlet, ScrollRestoration, useLocation } from "react-router";
-import { contractor, navigation } from "../data/contractor-dashboard";
+import { navigation } from "../data/contractor-dashboard";
 import DashboardSidebar from "./dashboard-sidebar";
 import NotificationsMenu from "./notifications-menu";
 import TierBadge from "./tier-badge";
 
 export default function ContractorLayout() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -16,12 +19,13 @@ export default function ContractorLayout() {
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => pathname.startsWith(item.href));
 
-  const invoiceId = pathname.match(/\/invoices\/(INV-[\w-]+)$/)?.[1];
   const pageTitle = pathname.endsWith("/invoices/new")
     ? "New Invoice"
-    : invoiceId
-      ? `Invoice #${invoiceId}`
-      : (current?.label ?? "Dashboard");
+    : /\/invoices\/\d+\/edit$/.test(pathname)
+      ? "Edit Invoice"
+      : /\/invoices\/\d+$/.test(pathname)
+        ? "Invoice Details"
+        : (current?.label ?? "Dashboard");
 
   return (
     <div className="flex min-h-svh bg-[#f8fafc]">
@@ -52,20 +56,22 @@ export default function ContractorLayout() {
           <div className="flex items-center gap-3">
             <NotificationsMenu />
             <div className="flex items-center gap-2.5 border-l border-[#efefef] pl-3">
-              <img
-                src={contractor.avatar}
-                alt=""
-                className="size-8 rounded-full object-cover"
+              <UserAvatar
+                name={user?.name ?? ""}
+                src={user?.avatar}
+                className="size-8"
               />
               <div className="max-sm:hidden">
                 <div className="flex items-start gap-1.5">
                   <p className="text-sm leading-5 font-semibold text-[#0f172a]">
-                    {contractor.name}
+                    {user?.name}
                   </p>
-                  <TierBadge label={contractor.tier} />
+                  {user?.business?.plan && (
+                    <TierBadge label={user.business.plan} />
+                  )}
                 </div>
                 <p className="text-xs leading-4 text-[#64748b]">
-                  {contractor.shortBusiness}
+                  {user?.business?.business_name}
                 </p>
               </div>
             </div>

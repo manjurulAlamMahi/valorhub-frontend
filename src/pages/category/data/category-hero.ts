@@ -10,28 +10,16 @@ export const categoryHero = {
   description:
     "Browse hundreds of verified services provided by trusted professionals across the United States.",
   search: {
-    action: "/marketplace",
+    action: "/contractors",
     service: {
-      name: "q",
+      name: "service",
       placeholder: "What service are you looking for?",
     },
     zip: {
-      name: "zip",
+      name: "zip_code",
       placeholder: "ZIP Code",
     },
     cta: "Search",
     popularLabel: "Popular:",
-    popular: [
-      "Marketing",
-      "Plumbing",
-      "IT Support",
-      "Electrician",
-      "Home Cleaning",
-      "Roofing",
-      "Accounting",
-      "Attorney",
-      "Doctor",
-      "UX/UI Design",
-    ],
   },
 };

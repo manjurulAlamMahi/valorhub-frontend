@@ -1,6 +1,11 @@
+import Container from "@/components/shared/container";
 import CtaBanner from "@/components/shared/cta-banner";
+import PageLoader from "@/components/shared/page-loader";
+import { ErrorState } from "@/components/shared/query-state";
 import { SEO } from "@/components/seo/SEO";
+import { useApi } from "@/hooks/use-api";
 import { breadcrumbSchema } from "@/lib/schemas";
+import type { GivingBackData } from "@/services/public";
 import GivingBackHero from "./_components/giving-back-hero";
 import ImpactStats from "./_components/impact-stats";
 import Initiatives from "./_components/initiatives";
@@ -8,6 +13,8 @@ import VeteranStory from "./_components/veteran-story";
 import { givingBack } from "./data/giving-back";
 
 export default function GivingBack() {
+  const { data, error, refetch } = useApi<GivingBackData>("/giving-back");
+
   return (
     <>
       <SEO
@@ -19,20 +26,36 @@ export default function GivingBack() {
         ])}
       />
 
-      <main>
-        <GivingBackHero />
-        <ImpactStats />
-        <Initiatives />
-        <VeteranStory />
-        <CtaBanner
-          title={givingBack.cta.title}
-          description={givingBack.cta.description}
-          className="bg-[#f4f4f4]"
-          containerClassName="py-10! xl:max-w-310"
-          cardClassName="py-10"
-          titleClassName="lg:text-[42px]"
-        />
-      </main>
+      {!data && error ? (
+        <main>
+          <Container>
+            <ErrorState error={error} onRetry={refetch} className="my-20" />
+          </Container>
+        </main>
+      ) : !data ? (
+        <PageLoader />
+      ) : (
+        <main>
+          <GivingBackHero hero={data.hero} />
+          <ImpactStats stats={data.impact_metrics} />
+          <Initiatives initiatives={data.initiatives} />
+          <VeteranStory story={data.testimonial} />
+          <CtaBanner
+            title={data.nomination_cta.headline}
+            description={data.nomination_cta.subtitle}
+            actions={[
+              {
+                label: data.nomination_cta.action_label,
+                link: givingBack.nominatePath,
+              },
+            ]}
+            className="bg-[#f4f4f4]"
+            containerClassName="py-10! xl:max-w-310"
+            cardClassName="py-10"
+            titleClassName="lg:text-[42px]"
+          />
+        </main>
+      )}
     </>
   );
 }

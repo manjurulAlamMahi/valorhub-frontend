@@ -36,19 +36,7 @@ export const contact = {
       },
     },
   },
-  details: [
-    {
-      label: "Email",
-      value: "support@valorhub.com",
-      href: "mailto:support@valorhub.com",
-    },
-    { label: "Phone", value: "(800) 555-0199", href: "tel:+18005550199" },
-    { label: "Address", value: "1200 Liberty Way, Dallas, TX 75201" },
-    { label: "Support hours", value: "Mon–Sat 7am–7pm CST" },
-  ],
   map: {
     image: "/images/contact/map.jpg",
-    label: "Dallas, TX",
-    href: "https://www.google.com/maps/search/?api=1&query=1200+Liberty+Way,+Dallas,+TX+75201",
   },
 };

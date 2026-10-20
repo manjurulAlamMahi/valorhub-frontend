@@ -1,24 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import type { FormEvent } from "react";
-import { useSearchParams } from "react-router";
+import { createSearchParams, useNavigate } from "react-router";
 import { marketplace } from "../data/marketplace";
 
 const { search } = marketplace.hero;
 
 export default function MarketplaceSearch() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
+  // Search runs on the Browse Products page, which the API filters server-side
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = String(
       new FormData(event.currentTarget).get(search.name) ?? "",
     ).trim();
 
-    setSearchParams((prev) => {
-      if (value) prev.set(search.name, value);
-      else prev.delete(search.name);
-      return prev;
+    navigate({
+      pathname: search.action,
+      search: value
+        ? createSearchParams({ [search.name]: value }).toString()
+        : "",
     });
   };
 
@@ -31,10 +33,8 @@ export default function MarketplaceSearch() {
       <label className="bg-muted flex h-11 min-w-0 items-center gap-3 rounded-xl px-4 sm:flex-1">
         <Search aria-hidden className="text-muted-foreground size-4.5" />
         <input
-          key={searchParams.get(search.name)}
           type="search"
           name={search.name}
-          defaultValue={searchParams.get(search.name) ?? ""}
           aria-label={search.placeholder}
           placeholder={search.placeholder}
           className="placeholder:text-muted-foreground text-card-foreground min-w-0 flex-1 bg-transparent text-sm outline-none"

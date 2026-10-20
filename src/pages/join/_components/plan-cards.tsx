@@ -1,20 +1,25 @@
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
-import { annualPrice, onboarding, plans, type Plan } from "../data/onboarding";
+import { annualPrice, onboarding, type Plan } from "../data/onboarding";
 
 type PlanCardsProps = {
   onSelect: (plan: Plan) => void;
+  // Plans from the API (GET /membership-plans or /contractor/subscription)
+  plans: Plan[];
   billing?: "monthly" | "annual";
   // Slug of the plan the business is already on
   currentSlug?: string;
+  disabled?: boolean;
   className?: string;
 };
 
 // Free / Pro / Elite cards shared by signup and the dashboard Subscription page
 export default function PlanCards({
   onSelect,
+  plans,
   billing = "monthly",
   currentSlug,
+  disabled = false,
   className,
 }: PlanCardsProps) {
   return (
@@ -71,7 +76,7 @@ export default function PlanCards({
             <button
               type="button"
               onClick={() => onSelect(plan)}
-              disabled={isCurrent}
+              disabled={isCurrent || disabled}
               aria-label={
                 isCurrent
                   ? `${plan.name} is your current plan`

@@ -1,7 +1,11 @@
 import { cn } from "@/lib/utils";
-import { ChevronLeft, X } from "lucide-react";
+import UserAvatar from "@/components/shared/user-avatar";
+import { useApi } from "@/hooks/use-api";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
+import { ChevronLeft, LogOut, X } from "lucide-react";
 import { Link, NavLink } from "react-router";
-import { contractor, navigation } from "../data/contractor-dashboard";
+import { navigation } from "../data/contractor-dashboard";
 import SidebarLogo from "./sidebar-logo";
 
 type DashboardSidebarProps = {
@@ -17,6 +21,20 @@ export default function DashboardSidebar({
   onToggleCollapse,
   onClose,
 }: DashboardSidebarProps) {
+  const { user, logout } = useAuth();
+  const unread = useApi<{ unread_count: number }>("/messages/unread-count");
+  const { refetch } = unread;
+  // No push channel yet, so the badge polls
+  useEffect(() => {
+    const timer = window.setInterval(refetch, 30_000);
+    return () => window.clearInterval(timer);
+  }, [refetch]);
+  const items = navigation.map((item) =>
+    item.href.endsWith("/messages")
+      ? { ...item, count: unread.data?.unread_count }
+      : item,
+  );
+
   return (
     <>
       {open && (
@@ -70,7 +88,7 @@ export default function DashboardSidebar({
           className="flex-1 overflow-y-auto px-2 py-4"
         >
           <ul className="space-y-0.5">
-            {navigation.map(({ label, href, icon: Icon, end, count, tier }) => (
+            {items.map(({ label, href, icon: Icon, end, count, tier }) => (
               <li key={href}>
                 <NavLink
                   to={href}
@@ -129,19 +147,31 @@ export default function DashboardSidebar({
               "lg:justify-center lg:p-0": collapsed,
             })}
           >
-            <img
-              src={contractor.avatar}
-              alt=""
-              className="size-8 shrink-0 rounded-full object-cover"
+            <UserAvatar
+              name={user?.name ?? ""}
+              src={user?.avatar}
+              className="size-8"
             />
-            <div className={cn("min-w-0", { "lg:hidden": collapsed })}>
+            <div className={cn("min-w-0 flex-1", { "lg:hidden": collapsed })}>
               <p className="truncate text-sm leading-5 font-semibold text-white">
-                {contractor.name}
+                {user?.name}
               </p>
               <p className="truncate text-xs leading-4 text-white/45">
-                {contractor.business}
+                {user?.business?.business_name}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              aria-label="Log out"
+              title="Log out"
+              className={cn(
+                "shrink-0 rounded p-1 text-white/50 hover:bg-white/5 hover:text-white",
+                { "lg:hidden": collapsed },
+              )}
+            >
+              <LogOut aria-hidden className="size-4" />
+            </button>
           </div>
         </div>
       </aside>

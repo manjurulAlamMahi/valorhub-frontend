@@ -11,52 +11,33 @@ export const marketplace = {
     description:
       "Browse parts, equipment, and service bundles listed by verified ValorHub professionals.",
     search: {
-      name: "q",
+      action: "/marketplace/products",
+      name: "search",
       placeholder: "Search products, parts, or equipment",
       cta: "Search",
     },
   },
   categories: {
     title: "Shop by category",
-    items: [
-      {
-        slug: "plumbing",
-        label: "Plumbing Supplies",
-        image: `${images}/gallery/1.jpg`,
-      },
-      {
-        slug: "electrical",
-        label: "Electrical Supplies",
-        image: `${images}/gallery/2.jpg`,
-      },
-      {
-        slug: "hvac",
-        label: "HVAC Equipment",
-        image: `${images}/gallery/3.jpg`,
-      },
-      {
-        slug: "roofing",
-        label: "Roofing Materials",
-        image: `${images}/gallery/5.jpg`,
-      },
-      {
-        slug: "hardware",
-        label: "General Hardware",
-        image: `${images}/videos/1.jpg`,
-      },
+    // Categories have no artwork in the API, so tiles cycle through these
+    images: [
+      `${images}/gallery/1.jpg`,
+      `${images}/gallery/2.jpg`,
+      `${images}/gallery/3.jpg`,
+      `${images}/gallery/5.jpg`,
+      `${images}/videos/1.jpg`,
     ],
   },
   products: {
     title: "Trending products",
-    resultsTitle: "Search results",
     seeAll: "See all",
     badge: "Elite",
-    empty: "No products match your search.",
+    empty: "No products listed yet.",
   },
   cta: {
     title: "Have products or parts to sell?",
     description:
       "List your inventory on the ValorHub Marketplace and reach thousands of homeowners.",
-    action: { label: "List a product", link: "/join" },
+    label: "List a product",
   },
 };

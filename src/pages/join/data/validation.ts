@@ -11,8 +11,7 @@ export const socialFields = [
   "facebook",
   "instagram",
   "linkedin",
-  "youtube",
-  "tiktok",
+  "twitter",
 ] as const;
 
 export function validate(stage: Stage, values: OnboardingValues): Errors {

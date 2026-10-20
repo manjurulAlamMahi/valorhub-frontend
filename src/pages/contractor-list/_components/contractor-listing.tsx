@@ -1,56 +1,44 @@
 import Container from "@/components/shared/container";
+import { EmptyState, ErrorState } from "@/components/shared/query-state";
 import Section from "@/components/shared/section";
-import { useMemo, useRef, useState } from "react";
+import type { ApiQuery } from "@/hooks/use-api";
+import { cn } from "@/lib/utils";
+import type { ContractorsData } from "@/services/public";
+import { useRef } from "react";
 import { useSearchParams } from "react-router";
 import {
   contractorList,
-  initialFilters,
-  type ContractorFiltersState,
+  PAGE_SIZE,
+  type ContractorFilters,
 } from "../data/contractor-list";
-import { contractors } from "../data/contractors";
 import ContractorCard from "./contractor-card";
-import ContractorFilters from "./contractor-filters";
-import ContractorPagination from "./contractor-pagination";
+import ContractorFiltersPanel from "./contractor-filters";
+import Pagination from "@/components/shared/pagination";
 
-export default function ContractorListing({ slug }: { slug: string }) {
-  const [filters, setFilters] = useState(initialFilters);
-  const [searchParams, setSearchParams] = useSearchParams();
+type ContractorListingProps = {
+  categoryId?: number;
+  filters: ContractorFilters;
+  query: ApiQuery<ContractorsData>;
+};
+
+export default function ContractorListing({
+  categoryId,
+  filters,
+  query,
+}: ContractorListingProps) {
+  const [, setSearchParams] = useSearchParams();
   const listingRef = useRef<HTMLDivElement>(null);
+  const { data, error, isLoading, refetch } = query;
 
-  const filtered = useMemo(
-    () =>
-      contractors.filter((contractor) => {
-        const zip = filters.zip.trim();
-        if (zip && !contractor.zip.startsWith(zip)) return false;
-        if (contractor.rating < filters.minRating) return false;
-
-        return filters.credentials.every((credential) =>
-          credential === "available"
-            ? contractor.availableToday
-            : contractor.badges.includes(
-                credential as (typeof contractor.badges)[number],
-              ),
-        );
-      }),
-    [filters],
-  );
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filtered.length / contractorList.pageSize),
-  );
-  const requestedPage = Number(searchParams.get("page")) || 1;
-  const page = Math.min(Math.max(requestedPage, 1), totalPages);
-  const visible = filtered.slice(
-    (page - 1) * contractorList.pageSize,
-    page * contractorList.pageSize,
-  );
-
-  const setPage = (next: number) => {
+  // Every filter change resets to page 1
+  const updateParams = (changes: Record<string, string | null>) => {
     setSearchParams(
       (prev) => {
-        if (next === 1) prev.delete("page");
-        else prev.set("page", String(next));
+        for (const [key, value] of Object.entries(changes)) {
+          if (value) prev.set(key, value);
+          else prev.delete(key);
+        }
+        if (!("page" in changes)) prev.delete("page");
         return prev;
       },
       { preventScrollReset: true },
@@ -58,13 +46,8 @@ export default function ContractorListing({ slug }: { slug: string }) {
   };
 
   const handlePageChange = (next: number) => {
-    setPage(next);
+    updateParams({ page: next === 1 ? null : String(next) });
     listingRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleFiltersChange = (next: ContractorFiltersState) => {
-    setFilters(next);
-    setPage(1);
   };
 
   return (
@@ -74,32 +57,50 @@ export default function ContractorListing({ slug }: { slug: string }) {
           ref={listingRef}
           className="flex scroll-mt-40 flex-col gap-6 lg:flex-row"
         >
-          <ContractorFilters
-            slug={slug}
+          <ContractorFiltersPanel
+            categoryId={categoryId}
             filters={filters}
-            onChange={handleFiltersChange}
+            options={data?.filter_options}
+            onChange={updateParams}
           />
 
-          <div className="min-w-0 flex-1">
-            {visible.length > 0 ? (
+          <div
+            aria-busy={isLoading}
+            className={cn("min-w-0 flex-1 transition-opacity", {
+              "opacity-60": isLoading && data,
+            })}
+          >
+            {!data && error ? (
+              <ErrorState error={error} onRetry={refetch} />
+            ) : !data ? (
               <div className="grid gap-6 md:grid-cols-2">
-                {visible.map((contractor) => (
+                {Array.from({ length: PAGE_SIZE }, (_, index) => (
+                  <div
+                    key={index}
+                    aria-hidden
+                    className="h-64 animate-pulse rounded-2xl bg-white"
+                  />
+                ))}
+              </div>
+            ) : data.items.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2">
+                {data.items.map((contractor) => (
                   <ContractorCard key={contractor.id} contractor={contractor} />
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground rounded-2xl border border-[#ebebeb] bg-white p-10 text-center text-sm">
-                {contractorList.empty}
-              </p>
+              <EmptyState>{contractorList.empty}</EmptyState>
             )}
           </div>
         </div>
 
-        <ContractorPagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        {data && (
+          <Pagination
+            page={data.pagination.current_page}
+            totalPages={data.pagination.last_page}
+            onPageChange={handlePageChange}
+          />
+        )}
       </Container>
     </Section>
   );

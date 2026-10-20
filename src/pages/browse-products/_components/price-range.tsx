@@ -1,4 +1,4 @@
-import { formatPrice } from "@/pages/marketplace/data/products";
+import { formatPrice } from "@/lib/media";
 
 type PriceRangeProps = {
   bounds: [number, number];
@@ -61,7 +61,7 @@ export default function PriceRange({
             key={index}
             className="bg-input rounded-md px-2.5 py-1.5 text-xs leading-[normal] font-medium text-[#1e293b]"
           >
-            {formatPrice(price).replace(".00", "")}
+            {formatPrice(price)}
           </span>
         ))}
       </div>

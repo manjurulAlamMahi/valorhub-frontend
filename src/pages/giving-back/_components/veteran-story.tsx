@@ -1,10 +1,12 @@
 import Container from "@/components/shared/container";
 import Section from "@/components/shared/section";
-import { givingBack } from "../data/giving-back";
+import type { GivingBackData } from "@/services/public";
 
-const { story } = givingBack;
-
-export default function VeteranStory() {
+export default function VeteranStory({
+  story,
+}: {
+  story: GivingBackData["testimonial"];
+}) {
   return (
     <Section className="bg-white">
       <Container className="py-10!">
@@ -13,7 +15,7 @@ export default function VeteranStory() {
             "{story.quote}"
           </blockquote>
           <figcaption className="text-sm text-[#64748b]">
-            — {story.author}
+            — {story.author}, {story.author_title}
           </figcaption>
         </figure>
       </Container>

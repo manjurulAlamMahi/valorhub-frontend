@@ -1,19 +1,25 @@
 import Container from "@/components/shared/container";
 import Section from "@/components/shared/section";
+import type { ProductDetail } from "@/services/marketplace";
 import { productDetails } from "../data/product-details";
 
-const { reviews } = productDetails;
+// The API returns the seller's reviews; products have no reviews of their own yet
+export default function ProductReviews({
+  reviews,
+}: {
+  reviews: ProductDetail["reviews"];
+}) {
+  if (reviews.length === 0) return null;
 
-export default function ProductReviews() {
   return (
     <Section className="bg-input">
       <Container className="space-y-4 py-10! xl:max-w-310">
         <h2 className="text-lg leading-[normal] font-bold text-[#1e293b]">
-          {reviews.title}
+          {productDetails.reviews.title}
         </h2>
 
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {reviews.items.map((review) => (
+          {reviews.map((review) => (
             <li
               key={review.id}
               className="flex min-h-28.75 flex-col justify-between gap-2.5 rounded-xl border border-[#e6eaf2] bg-white p-4.5 leading-[normal]"
@@ -33,10 +39,18 @@ export default function ProductReviews() {
                     />
                   ))}
                 </div>
-                <p className="text-[13px] text-[#64748b]">{review.text}</p>
+                {review.comment && (
+                  <p className="text-[13px] text-[#64748b]">{review.comment}</p>
+                )}
               </div>
               <p className="text-xs font-medium text-[#1e293b]">
-                {review.author}
+                {review.author_name}
+                {review.created_at && (
+                  <span className="font-normal text-[#64748b]">
+                    {" "}
+                    · {review.created_at}
+                  </span>
+                )}
               </p>
             </li>
           ))}

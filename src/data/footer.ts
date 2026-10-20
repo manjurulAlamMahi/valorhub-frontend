@@ -26,26 +26,19 @@ export const footer = {
     },
     {
       title: "Categories",
+      // Categories come from the API, so the footer links to the directory pages
       links: [
         {
-          label: "Blue Collar",
-          link: "/category/blue-collar",
+          label: "All Categories",
+          link: "/category",
         },
         {
-          label: "White Collar",
-          link: "/category/white-collar",
+          label: "Find a Pro",
+          link: "/contractors",
         },
         {
-          label: "Grey Collar",
-          link: "/category/grey-collar",
-        },
-        {
-          label: "Gold Collar",
-          link: "/category/gold-collar",
-        },
-        {
-          label: "Other Services",
-          link: "/category/other-services",
+          label: "Request a Quote",
+          link: "/request-quote",
         },
       ],
     },

@@ -1,3 +1,4 @@
+import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Star } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -7,7 +8,8 @@ type ReviewFormProps = {
   initialRating?: number;
   initialText?: string;
   onCancel: () => void;
-  onSave: (rating: number, text: string) => void;
+  // Posts the review; a rejection shows its message in the form
+  onSave: (rating: number, text: string) => Promise<void>;
 };
 
 export default function ReviewForm({
@@ -20,17 +22,29 @@ export default function ReviewForm({
   const [hover, setHover] = useState(0);
   const [text, setText] = useState(initialText);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!rating) return setError("Please choose a rating.");
     if (text.trim().length < 10)
       return setError("Please write at least 10 characters.");
-    onSave(rating, text.trim());
+    setSaving(true);
+    try {
+      await onSave(rating, text.trim());
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not post review.",
+      );
+      setSaving(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-3">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      className="w-full space-y-3"
+    >
       <fieldset>
         <legend className="sr-only">Rating</legend>
         <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
@@ -75,7 +89,7 @@ export default function ReviewForm({
         id="review-text"
         value={text}
         rows={3}
-        maxLength={1000}
+        maxLength={2000}
         onChange={(event) => {
           setText(event.target.value);
           setError("");
@@ -86,7 +100,9 @@ export default function ReviewForm({
       {error && <p className="text-sm text-[#c92032]">{error}</p>}
 
       <div className="flex gap-2.5">
-        <ActionButton type="submit">Save review</ActionButton>
+        <ActionButton type="submit" disabled={saving}>
+          {saving ? "Posting…" : "Post review"}
+        </ActionButton>
         <ActionButton variant="outline" onClick={onCancel}>
           Cancel
         </ActionButton>

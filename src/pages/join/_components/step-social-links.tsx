@@ -8,7 +8,6 @@ const fields: {
   name: keyof OnboardingValues;
   label: string;
   placeholder: string;
-  half?: boolean;
 }[] = [
   {
     name: "website",
@@ -31,16 +30,9 @@ const fields: {
     placeholder: "linkedin.com/company/yourbusiness",
   },
   {
-    name: "youtube",
-    label: "YouTube",
-    placeholder: "youtube.com/@yourbusiness",
-    half: true,
-  },
-  {
-    name: "tiktok",
-    label: "TikTok",
-    placeholder: "tiktok.com/@yourbusiness",
-    half: true,
+    name: "twitter",
+    label: "X (Twitter)",
+    placeholder: "x.com/yourbusiness",
   },
 ];
 
@@ -70,7 +62,7 @@ export default function StepSocialLinks({
               value={values[field.name] as string}
               error={errors[field.name]}
               onChange={(event) => onChange(field.name, event.target.value)}
-              className={field.half ? undefined : "sm:col-span-2"}
+              className="sm:col-span-2"
             />
           ))}
         </div>

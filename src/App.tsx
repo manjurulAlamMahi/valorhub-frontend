@@ -1,5 +1,10 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { GuestOnly, RequireAuth } from "./components/auth/route-guards";
 import RootLayout from "./components/shared/root-layout";
+import ForgotPassword from "./pages/auth/forgot-password";
+import Login from "./pages/auth/login";
+import Register from "./pages/auth/register";
+import ResetPassword from "./pages/auth/reset-password";
 import BrowseProducts from "./pages/browse-products";
 import Category from "./pages/category";
 import Contact from "./pages/contact";
@@ -18,6 +23,7 @@ import SavedContractors from "./pages/dashboard/saved";
 import Settings from "./pages/dashboard/settings";
 import Faq from "./pages/faq";
 import GivingBack from "./pages/giving-back";
+import NominateVeteran from "./pages/giving-back/nominate";
 import ContractorList from "./pages/contractor-list";
 import ContractorDashboard from "./pages/contractor-dashboard";
 import ComingSoon from "./pages/contractor-dashboard/_components/coming-soon";
@@ -52,18 +58,24 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <Home /> },
       { path: "/category", element: <Category /> },
-      { path: "/category/:slug", element: <ContractorList /> },
+      { path: "/category/:id", element: <ContractorList /> },
+      { path: "/contractors", element: <ContractorList /> },
       { path: "/contractors/:id", element: <ContractorProfile /> },
       { path: "/marketplace", element: <Marketplace /> },
       { path: "/marketplace/products", element: <BrowseProducts /> },
       { path: "/marketplace/products/:id", element: <ProductDetails /> },
       { path: "/giving-back", element: <GivingBack /> },
+      { path: "/giving-back/nominate", element: <NominateVeteran /> },
       { path: "/faq", element: <Faq /> },
       { path: "/contact", element: <Contact /> },
       { path: "/request-quote", element: <RequestQuote /> },
       {
         path: "/dashboard",
-        element: <DashboardLayout />,
+        element: (
+          <RequireAuth role="customer">
+            <DashboardLayout />
+          </RequireAuth>
+        ),
         children: [
           { index: true, element: <DashboardOverview /> },
           { path: "requests", element: <MyRequests /> },
@@ -84,11 +96,43 @@ const router = createBrowserRouter([
   },
   {
     element: <OnboardingLayout />,
-    children: [{ path: "/join", element: <Join /> }],
+    children: [
+      { path: "/join", element: <Join /> },
+      {
+        path: "/login",
+        element: (
+          <GuestOnly>
+            <Login />
+          </GuestOnly>
+        ),
+      },
+      {
+        path: "/register",
+        element: (
+          <GuestOnly>
+            <Register />
+          </GuestOnly>
+        ),
+      },
+      {
+        path: "/forgot-password",
+        element: (
+          <GuestOnly>
+            <ForgotPassword />
+          </GuestOnly>
+        ),
+      },
+      // Not guarded: a signed-in user may still follow an emailed reset link
+      { path: "/reset-password", element: <ResetPassword /> },
+    ],
   },
   {
     path: "/contractor/dashboard",
-    element: <ContractorLayout />,
+    element: (
+      <RequireAuth role="business">
+        <ContractorLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <ContractorDashboard /> },
       { path: "quotes", element: <QuoteRequests /> },
@@ -97,6 +141,7 @@ const router = createBrowserRouter([
       { path: "invoices", element: <ContractorInvoices /> },
       { path: "invoices/new", element: <NewInvoice /> },
       { path: "invoices/:id", element: <ContractorInvoiceDetails /> },
+      { path: "invoices/:id/edit", element: <NewInvoice /> },
       { path: "services", element: <MyServices /> },
       { path: "products", element: <ContractorProducts /> },
       { path: "gallery", element: <ContractorGallery /> },

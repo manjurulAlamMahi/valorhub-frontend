@@ -1,5 +1,3 @@
-import { faker } from "@faker-js/faker";
-
 export const simpleAndFast = {
   badge: "Simple & Fast",
   headlines: [
@@ -19,7 +17,7 @@ export const simpleAndFast = {
 
   approaches: [
     {
-      id: faker.string.uuid(),
+      id: "search-a-service",
       title: "Search a Service",
       description:
         "Search by category, keyword, or ZIP code to discover trusted professionals near you.",
@@ -27,7 +25,7 @@ export const simpleAndFast = {
       color: "#F0EFF4",
     },
     {
-      id: faker.string.uuid(),
+      id: "request-a-quote",
       title: "Request a Quote",
       description:
         "Choose a contractor and send your project details to receive personalized quotes.",
@@ -35,7 +33,7 @@ export const simpleAndFast = {
       color: "#FAEFF0",
     },
     {
-      id: faker.string.uuid(),
+      id: "compare-hire",
       title: "Compare & Hire",
       description:
         "Review quotes, compare contractors, and hire the one that best fits your needs.",
@@ -43,7 +41,7 @@ export const simpleAndFast = {
       color: "#DEEAE0",
     },
     {
-      id: faker.string.uuid(),
+      id: "pay-securely-review",
       title: "Pay Securely & Review",
       description:
         "Receive your invoice, pay securely through ValorHub, and leave a review after the project is complete.",

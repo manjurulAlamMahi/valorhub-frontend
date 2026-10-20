@@ -4,6 +4,8 @@ import OptionTile from "./option-tile";
 const { budgetTimeline: copy } = requestQuote;
 
 type StepBudgetTimelineProps = {
+  budgets: { key: string; label: string }[];
+  timelines: { key: string; label: string }[];
   budget: string;
   timeline: string;
   errors: { budget?: string; timeline?: string };
@@ -51,6 +53,8 @@ function OptionGroup({
 }
 
 export default function StepBudgetTimeline({
+  budgets,
+  timelines,
   budget,
   timeline,
   errors,
@@ -62,7 +66,7 @@ export default function StepBudgetTimeline({
       <OptionGroup
         name="budget"
         label={copy.budgetLabel}
-        options={copy.budgets}
+        options={budgets}
         value={budget}
         error={errors.budget}
         onChange={onBudgetChange}
@@ -70,7 +74,7 @@ export default function StepBudgetTimeline({
       <OptionGroup
         name="timeline"
         label={copy.timelineLabel}
-        options={copy.timelines}
+        options={timelines}
         value={timeline}
         error={errors.timeline}
         onChange={onTimelineChange}

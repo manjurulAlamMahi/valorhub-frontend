@@ -2,13 +2,13 @@ export const findAPro = {
   headlines: ["Find A Trusted Service Professional", "In Your Area"],
   background: "/images/home/find-a-pro/background.jpg",
   search: {
-    action: "/marketplace",
+    action: "/contractors",
     service: {
-      name: "q",
+      name: "service",
       placeholder: "What service do you need?",
     },
     zip: {
-      name: "zip",
+      name: "zip_code",
       placeholder: "Zip Code",
     },
     cta: "Search",
